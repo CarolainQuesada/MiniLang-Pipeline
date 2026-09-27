@@ -4,8 +4,9 @@ Proyecto en pareja para la Parte B del examen de Paradigmas de Programación.
 
 ## Estado actual
 
-Solo se ha preparado la estructura inicial. Todavía no hay código ejecutable,
-dependencias externas ni lógica del examen.
+Se ha preparado la estructura inicial y el modelo de instrucciones Java.
+Todavía no hay lexer, parser, generación de IR ni aplicación ejecutable.
+No se utilizan dependencias externas.
 
 ## Estructura
 
@@ -29,7 +30,27 @@ REDUCE), `resultado.txt`, MIPS y su checksum/firma, `firma.txt`, la integración
 final, `ejecutar.bat` y el conjunto completo de casos de prueba obligatorios.
 
 La implementación Java separará lectura, análisis, modelo y generación de IR.
-Las clases y sus paquetes se incorporarán en los pasos correspondientes.
+
+## Modelo Java
+
+El paquete `minilang.modelo` contiene la clase abstracta `Instruccion` y sus
+subclases `DataInstr`, `FilterInstr`, `MapInstr`, `ReduceInstr` y `PrintInstr`.
+La clase base conserva la línea de origen (desde 1); cada subclase implementa
+`getNombre()`. Así, una colección de `Instruccion` puede consultar los nombres
+mediante polimorfismo, sin comprobar el tipo concreto.
+
+Los objetos son inmutables: DATA copia su lista y los operadores se representan
+mediante enumeraciones limitadas a la gramática. Los números usan `BigInteger`
+para no imponer un límite artificial de `int` a los enteros no negativos.
+Los constructores rechazan datos inválidos; la detección y presentación de
+errores del archivo fuente corresponderá al análisis en pasos posteriores.
+Estas clases solo representan instrucciones: no ejecutan operaciones.
+
+Para compilar el modelo desde la raíz del repositorio con JDK 21 en PowerShell:
+
+```powershell
+javac -encoding UTF-8 -d java/build java/src/minilang/modelo/*.java
+```
 
 ## Trabajo por pasos
 
