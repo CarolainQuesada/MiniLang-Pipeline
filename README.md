@@ -4,8 +4,8 @@ Proyecto en pareja para la Parte B del examen de Paradigmas de Programación.
 
 ## Estado actual
 
-Se ha preparado la estructura inicial y el modelo de instrucciones Java.
-Todavía no hay lexer, parser, generación de IR ni aplicación ejecutable.
+Se ha preparado la estructura inicial, el modelo de instrucciones Java y el lexer.
+Todavía no hay parser, generación de IR ni aplicación ejecutable.
 No se utilizan dependencias externas.
 
 ## Estructura
@@ -14,7 +14,7 @@ No se utilizan dependencias externas.
 java/src/      Código fuente de la etapa Java.
 python/        Reservado para el motor funcional de la compañera.
 mips/          Reservado para la implementación MIPS de la compañera.
-pruebas/java/  Pruebas exclusivas de la etapa Java, pendientes.
+pruebas/java/  Pruebas exclusivas de la etapa Java.
 ```
 
 Los archivos `.gitkeep` permiten conservar las carpetas vacías en Git.
@@ -52,7 +52,33 @@ Para compilar el modelo desde la raíz del repositorio con JDK 21 en PowerShell:
 javac -encoding UTF-8 -d java/build java/src/minilang/modelo/*.java
 ```
 
+## Lexer Java
+
+`minilang.lexer.Lexer` recibe texto y devuelve tokens inmutables con tipo,
+lexema y número de línea, más un token final `EOF`. Reconoce las palabras
+reservadas en mayúsculas, dígitos ASCII y los operadores de la gramática.
+Admite espacios, tabulaciones y saltos LF, CRLF o CR; CRLF cuenta una sola línea.
+Los símbolos o palabras desconocidos producen `ErrorLexico` con la línea.
+
+Los números conservan su texto sin convertirlo a `int`. El signo `-` se reconoce
+como operador independiente: será responsabilidad del parser rechazarlo donde
+se espere un número no negativo. El lexer tampoco comprueba el orden de las
+instrucciones ni exige una instrucción por línea, pues la gramática no establece
+esa restricción. No se admiten comentarios ni operadores adicionales.
+
+Para compilar todo Java y ejecutar las pruebas del lexer desde PowerShell:
+
+```powershell
+$fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -Xlint:all -d java/build $fuentes pruebas/java/LexerTest.java
+java -cp java/build LexerTest
+```
+
 ## Trabajo por pasos
+
+`develop` es la base de las ramas de trabajo y contiene la estructura inicial
+y el modelo Java. La etapa del lexer se desarrolla en `feature/java-lexer`,
+creada desde `develop`.
 
 Cada tarea pequeña se desarrolla en una rama específica y se registra mediante
 un commit en inglés siguiendo Conventional Commits. No se integra en `main`
