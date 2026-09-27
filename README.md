@@ -4,9 +4,9 @@ Proyecto en pareja para la Parte B del examen de Paradigmas de Programación.
 
 ## Estado actual
 
-Se ha preparado la estructura inicial, el modelo de instrucciones Java, el lexer,
-el parser y la generación de texto IR en memoria. Todavía no hay lectura de
-`programa.mini`, escritura de `programa.ir` ni aplicación ejecutable.
+La etapa Java lee `programa.mini`, realiza el análisis léxico y sintáctico y
+escribe `programa.ir` cuando el programa es válido. Incluye modelo orientado a
+objetos, diagnósticos por línea y pruebas exclusivas de Java.
 No se utilizan dependencias externas.
 
 ## Estructura
@@ -106,8 +106,8 @@ PRINT
 
 Se usan saltos LF (`\n`), incluido uno al final. Los enteros se escriben en
 decimal sin ceros iniciales. El orden de las instrucciones se conserva.
-El resultado es texto en memoria; la escritura del archivo y su codificación
-se conectarán en el siguiente paso de la etapa Java.
+El generador devuelve texto en memoria; `Compilador` conecta la lectura UTF-8,
+el análisis completo y la escritura del resultado en UTF-8 sin BOM.
 
 Uso desde Java:
 
@@ -115,6 +115,32 @@ Uso desde Java:
 var instrucciones = new Parser(new Lexer(texto).tokenizar()).parsear();
 String ir = new GeneradorIR().generar(instrucciones);
 ```
+
+## Ejecutar la etapa Java
+
+Desde la raíz del repositorio, con JDK 21 y PowerShell:
+
+```powershell
+$fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -d java/build $fuentes
+java -cp java/build minilang.Main
+```
+
+La aplicación no recibe argumentos: busca `programa.mini` y escribe
+`programa.ir` en el directorio actual. Se incluye el ejemplo del contrato como
+`programa.mini`. Guárdalo en UTF-8 sin BOM. El IR generado está excluido de Git.
+
+El código de salida es 0 al completar la generación, 1 ante errores de análisis
+o de lectura/escritura, y 2 por argumentos no admitidos. Los errores se muestran
+en la salida de error; los léxicos y sintácticos incluyen la línea.
+La salida solo se abre después de validar todo el programa: si falla el análisis,
+no se crea ni se sobrescribe `programa.ir`. Si existía un IR anterior, permanece
+intacto y no representa la entrada rechazada; comprueba el código de salida
+antes de usarlo. La escritura no es atómica: un fallo de disco durante ella
+puede dejar el archivo incompleto.
+
+Esta ejecución termina en el IR; Python, MIPS y la integración final siguen
+pendientes y corresponden a la compañera.
 
 Para compilar todo Java y ejecutar las pruebas desde PowerShell con JDK 21:
 
@@ -125,13 +151,15 @@ javac -encoding UTF-8 -Xlint:all -d java/build $fuentes $pruebas
 java -cp java/build LexerTest
 java -cp java/build ParserTest
 java -cp java/build GeneradorIRTest
+java -cp java/build EtapaJavaTest
 ```
 
 ## Trabajo por pasos
 
 `develop` es la base de las ramas de trabajo y contiene la estructura inicial,
-el modelo Java, el lexer y el parser. La generación de IR se desarrolla en
-`feature/java-ir-generator`, creada desde `develop` después de incorporar el parser
+el modelo Java, el lexer, el parser y el generador de IR. La conexión de archivos
+se desarrolla en `feature/java-file-pipeline`, creada desde `develop` después
+de incorporar el generador
 mediante avance directo (fast-forward).
 
 Cada tarea pequeña se desarrolla en una rama específica y se registra mediante
