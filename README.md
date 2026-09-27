@@ -154,13 +154,20 @@ java -cp java/build GeneradorIRTest
 java -cp java/build EtapaJavaTest
 ```
 
+Las pruebas cubren tokens y líneas, construcción del modelo, sintaxis inválida,
+formato exacto de IR y ejecución Java con archivos temporales. La prueba de la
+aplicación verifica los códigos 0, 1 y 2, mensajes de éxito en `stdout`, errores
+en `stderr` y conservación del IR anterior cuando falla el análisis o se pasan
+argumentos no admitidos. También verifica archivos ausentes y fallos de escritura.
+Este conjunto comprueba exclusivamente Java; no sustituye los casos obligatorios
+del pipeline completo que corresponden a la compañera.
+
 ## Trabajo por pasos
 
-`develop` es la base de las ramas de trabajo y contiene la estructura inicial,
-el modelo Java, el lexer, el parser y el generador de IR. La conexión de archivos
-se desarrolla en `feature/java-file-pipeline`, creada desde `develop` después
-de incorporar el generador
-mediante avance directo (fast-forward).
+`develop` es la base de las ramas de trabajo y contiene la etapa Java hasta la
+lectura y escritura de archivos. La revisión final de pruebas se desarrolla en
+`test/java-validation`, creada después de incorporar `feature/java-file-pipeline`
+a `develop` mediante avance directo (fast-forward).
 
 Cada tarea pequeña se desarrolla en una rama específica y se registra mediante
 un commit en inglés siguiendo Conventional Commits. No se integra en `main`

@@ -2,8 +2,10 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -34,6 +36,14 @@ public final class EtapaJavaTest {
                 "Archivo IR exacto en UTF-8, sin BOM y con LF");
             comprobar(Files.readString(entrada).equals(FUENTE), "Fuente intacta");
 
+            comprobar(ejecutar(carpeta, "Uso:", "inesperado") == 2, "Argumentos no admitidos");
+            comprobar(Files.readString(salida).equals(IR), "Conservar IR ante argumentos invalidos");
+            comprobar(Files.readString(entrada).equals(FUENTE), "Conservar fuente ante argumentos invalidos");
+
+            Files.writeString(entrada, "DATA 1\nMAP / 2\nPRINT", StandardCharsets.UTF_8);
+            comprobar(ejecutar(carpeta, "Linea 2:") == 1, "Error lexico despues de exito");
+            comprobar(Files.readString(salida).equals(IR), "Conservar IR anterior ante error lexico");
+
             Files.writeString(entrada, "DATA 1 PRINT", StandardCharsets.UTF_8);
             comprobar(ejecutar(carpeta, "Linea 1:") == 1, "Rechazar despues de exito");
             comprobar(Files.readString(salida).equals(IR), "Conservar IR anterior si falla el analisis");
@@ -56,20 +66,28 @@ public final class EtapaJavaTest {
         }
     }
 
-    private static int ejecutar(Path carpeta, String mensaje) throws Exception {
+    private static int ejecutar(Path carpeta, String mensaje, String... argumentos) throws Exception {
         String classpath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
             .map(ruta -> Path.of(ruta).toAbsolutePath().toString())
             .collect(Collectors.joining(File.pathSeparator));
         String java = Path.of(System.getProperty("java.home"), "bin", "java").toString();
         Path registro = carpeta.resolve("salida.log");
-        Process proceso = new ProcessBuilder(java, "-cp", classpath, "minilang.Main")
-            .directory(carpeta.toFile()).redirectErrorStream(true).redirectOutput(registro.toFile()).start();
+        Path errores = carpeta.resolve("errores.log");
+        List<String> comando = new ArrayList<>(List.of(java, "-cp", classpath, "minilang.Main"));
+        comando.addAll(Arrays.asList(argumentos));
+        Process proceso = new ProcessBuilder(comando)
+            .directory(carpeta.toFile()).redirectOutput(registro.toFile())
+            .redirectError(errores.toFile()).start();
         if (!proceso.waitFor(15, TimeUnit.SECONDS)) {
             proceso.destroyForcibly().waitFor();
             throw new AssertionError("Tiempo de ejecucion excedido");
         }
         String texto = Files.readString(registro, StandardCharsets.UTF_8);
-        comprobar(texto.contains(mensaje), "Diagnostico esperado: " + mensaje + "; obtenido: " + texto);
+        String error = Files.readString(errores, StandardCharsets.UTF_8);
+        String diagnostico = proceso.exitValue() == 0 ? texto : error;
+        comprobar(diagnostico.contains(mensaje), "Diagnostico esperado: " + mensaje + "; obtenido: " + diagnostico);
+        comprobar(proceso.exitValue() == 0 ? error.isEmpty() : texto.isEmpty(),
+            "Exito solo en stdout y errores solo en stderr");
         return proceso.exitValue();
     }
 
