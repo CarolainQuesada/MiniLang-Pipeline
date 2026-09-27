@@ -2,4 +2,8 @@
 *.class
 /java/build/
 
+# Python bytecode cache
+__pycache__/
+*.pyc
+
 # programa.ir, resultado.txt and firma.txt are deliverables (item 4): they are versioned.

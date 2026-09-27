@@ -1,0 +1,4 @@
+FILTER > 5 => [8, 10, 12]
+MAP * 2 => [16, 20, 24]
+REDUCE SUM => 60
+RESULT=60
