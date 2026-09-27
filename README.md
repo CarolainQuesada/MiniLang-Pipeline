@@ -1,100 +1,169 @@
-# MiniLang-Pipeline
+# MiniLang Pipeline
 
-Proyecto en pareja para la Parte B del examen de Paradigmas de Programación.
+Reto práctico de la Parte B del examen parcial de EIF400 Paradigmas de
+Programación (Universidad Nacional, Sede Regional Brunca – Campus Coto,
+II Ciclo 2026).
 
-## Estado actual
+El proyecto lee un pequeño lenguaje de transformación de datos, lo valida, lo
+traduce a una representación intermedia, ejecuta las operaciones con estilo
+funcional y genera una firma de verificación. Cada etapa usa un lenguaje y un
+paradigma distinto, y se comunica con la siguiente únicamente mediante archivos.
 
-La etapa Java lee `programa.mini`, realiza el análisis léxico y sintáctico y
-escribe `programa.ir` cuando el programa es válido. Incluye modelo orientado a
-objetos, diagnósticos por línea y pruebas exclusivas de Java.
-No se utilizan dependencias externas.
+## Integrantes
+
+- Ashly Delgado
+- Carolain Quesada
+
+## Pipeline
+
+```text
+programa.mini ──► Java ──► programa.ir ──► Python ──► resultado.txt ──► MIPS ──► firma.txt
+```
+
+| Etapa | Lenguaje y paradigma | Entrada | Salida | Estado |
+|---|---|---|---|---|
+| 1. Análisis y traducción | Java, orientado a objetos | `programa.mini` | `programa.ir` | Completa |
+| 2. Ejecución de operaciones | Python, funcional | `programa.ir` | `resultado.txt` | En desarrollo |
+| 3. Firma de verificación | MIPS, ensamblador | `resultado.txt` | `firma.txt` | En desarrollo |
+
+## Requisitos
+
+- JDK 17 o superior, con `java` y `javac` disponibles en la terminal.
+- Los requisitos de Python y MIPS se agregarán al completar esas etapas.
+
+No se usan librerías externas.
 
 ## Estructura
 
 ```text
-java/src/      Código fuente de la etapa Java.
-python/        Reservado para el motor funcional de la compañera.
-mips/          Reservado para la implementación MIPS de la compañera.
-pruebas/java/  Pruebas exclusivas de la etapa Java.
+programa.mini   Programa de ejemplo del enunciado.
+programa.ir     IR generado por la etapa Java a partir de programa.mini.
+java/src/       Código fuente de la etapa Java.
+tests/java/     Pruebas de la etapa Java.
+python/         Etapa Python (en desarrollo).
+mips/           Etapa MIPS (en desarrollo).
 ```
 
-Los archivos `.gitkeep` permiten conservar las carpetas vacías en Git.
+## Lenguaje MiniLang
 
-## División del trabajo
+Ejemplo (`programa.mini`):
 
-Mi parte comprende el modelo orientado a objetos, lexer, parser, errores con
-número de línea y generación de `programa.ir` desde `programa.mini` válido,
-además de las pruebas y documentación correspondientes a Java.
+```text
+DATA 3 8 5 10 12
+FILTER > 5
+MAP * 2
+REDUCE SUM
+PRINT
+```
 
-La parte de mi compañera comprende el motor funcional Python (FILTER, MAP y
-REDUCE), `resultado.txt`, MIPS y su checksum/firma, `firma.txt`, la integración
-final, `ejecutar.bat` y el conjunto completo de casos de prueba obligatorios.
+Se usa la gramática del enunciado, sin cambios:
 
-La implementación Java separará lectura, análisis, modelo y generación de IR.
+```text
+<programa>   ::= <data> <operacion> { <operacion> } "PRINT"
+<data>       ::= "DATA" <numero> { <numero> }
+<operacion>  ::= <filter> | <map> | <reduce>
+<filter>     ::= "FILTER" <comparador> <numero>
+<map>        ::= "MAP" <aritmetico> <numero>
+<reduce>     ::= "REDUCE" ("SUM" | "MAX" | "MIN")
+<comparador> ::= ">" | "<" | ">=" | "<=" | "=="
+<aritmetico> ::= "+" | "-" | "*"
+<numero>     ::= entero no negativo
+```
 
-## Modelo Java
+- Las palabras reservadas se escriben en mayúsculas.
+- Los espacios, tabulaciones y saltos de línea separan elementos, pero no son
+  obligatorios entre un operador y un número (`MAP*2` es válido).
+- **Regla semántica:** REDUCE convierte la lista en un solo número, por lo que
+  después de REDUCE solo puede venir PRINT. REDUCE es opcional; sin él, el
+  resultado es la lista transformada.
 
-El paquete `minilang.modelo` contiene la clase abstracta `Instruccion` y sus
-subclases `DataInstr`, `FilterInstr`, `MapInstr`, `ReduceInstr` y `PrintInstr`.
-La clase base conserva la línea de origen (desde 1); cada subclase implementa
-`getNombre()`. Así, una colección de `Instruccion` puede consultar los nombres
-mediante polimorfismo, sin comprobar el tipo concreto.
+## Etapa 1: Java
 
-Los objetos son inmutables: DATA copia su lista y los operadores se representan
-mediante enumeraciones limitadas a la gramática. Los números usan `BigInteger`
-para no imponer un límite artificial de `int` a los enteros no negativos.
-Los constructores rechazan datos inválidos; la detección y presentación de
-errores del archivo fuente corresponderá al análisis en pasos posteriores.
-Estas clases solo representan instrucciones: no ejecutan operaciones.
+### Ejecución
 
-Para compilar el modelo desde la raíz del repositorio con JDK 21 en PowerShell:
+Desde la raíz del repositorio, en PowerShell:
 
 ```powershell
-javac -encoding UTF-8 -d java/build java/src/minilang/modelo/*.java
+$fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -d java/build $fuentes
+java -cp java/build minilang.Main
 ```
 
-## Lexer Java
+El programa no recibe argumentos: lee `programa.mini` y escribe `programa.ir`
+en la carpeta actual. `programa.mini` debe estar guardado en UTF-8 (con o sin
+BOM).
 
-`minilang.lexer.Lexer` recibe texto y devuelve tokens inmutables con tipo,
-lexema y número de línea, más un token final `EOF`. Reconoce las palabras
-reservadas en mayúsculas, dígitos ASCII y los operadores de la gramática.
-Admite espacios, tabulaciones y saltos LF, CRLF o CR; CRLF cuenta una sola línea.
-Los símbolos o palabras desconocidos producen `ErrorLexico` con la línea.
+| Código de salida | Significado |
+|---|---|
+| 0 | Programa válido; se generó `programa.ir`. |
+| 1 | Error léxico, sintáctico, semántico o de lectura/escritura. |
+| 2 | Se pasaron argumentos. |
 
-Los números conservan su texto sin convertirlo a `int`. El signo `-` se reconoce
-como operador independiente: será responsabilidad del parser rechazarlo donde
-se espere un número no negativo. El lexer tampoco comprueba el orden de las
-instrucciones ni exige una instrucción por línea, pues la gramática no establece
-esa restricción. No se admiten comentarios ni operadores adicionales.
+Si hay un error, el mensaje se muestra en la salida de error y `programa.ir` no
+se crea ni se modifica. Si existía uno de una ejecución anterior, queda intacto;
+por eso las etapas siguientes deben revisar el código de salida antes de usarlo.
 
-## Parser Java
+### Errores detectados
 
-`minilang.parser.Parser` recibe los tokens del lexer y devuelve una lista
-inmutable de `Instruccion`. Usa análisis descendente con métodos pequeños para
-DATA, FILTER, MAP y REDUCE. Valida exactamente la estructura
-`DATA <numero> { <numero> } <operacion> { <operacion> } PRINT` y exige el fin
-del archivo después de PRINT. Cada instrucción conserva su línea de inicio.
+| Tipo | Entrada | Mensaje |
+|---|---|---|
+| Léxico | `FILTER ! 5` | `Linea 2: Caracter no reconocido: !` |
+| Sintáctico | `FILTER + 5` | `Linea 2: Se esperaba un comparador >, <, >=, <= o ==; se encontro '+'` |
+| Sintáctico | Programa sin DATA | `Linea 1: Se esperaba DATA al inicio del programa; se encontro 'FILTER'` |
+| Semántico | `REDUCE SUM` seguido de `MAP * 2` | `Linea 3: MAP necesita una lista, pero REDUCE de la linea 2 ya la convirtio en un solo numero; despues de REDUCE solo puede venir PRINT` |
 
-El primer error produce `ErrorSintactico` con la línea del token inesperado,
-lo esperado y lo encontrado. Si falta contenido al final, informa la línea de
-EOF. Rechaza números negativos, operandos faltantes, operadores fuera de su
-contexto e instrucciones fuera de orden. No agrega restricciones semánticas:
-por ejemplo, la gramática permite varias reducciones y operaciones después de
-REDUCE. No ejecuta operaciones, lee archivos ni escribe IR.
+También se informan con un mensaje claro la falta de `programa.mini` y un
+archivo que no está en UTF-8 (por ejemplo, UTF-16 creado con `>` en Windows
+PowerShell 5.1). Los caracteres invisibles o no ASCII, que suelen aparecer al
+copiar y pegar, se muestran con su código Unicode (por ejemplo, `U+00A0`), y las
+palabras desconocidas se muestran completas aunque tengan tildes (`FILTÉR`).
 
-Uso desde código Java: `new Parser(new Lexer(texto).tokenizar()).parsear()`.
-La lista de entrada debe provenir del lexer y terminar en un único token EOF.
+### Diseño
 
-## Generación de IR
+```text
+MiniLangCompiler:  Lexer ──► Parser ──► SemanticAnalyzer ──► IrGenerator
+                  (tokens)  (List<Instruction>)  (reglas)    (programa.ir)
+```
 
-`minilang.ir.GeneradorIR` serializa la lista de instrucciones validada por el
-parser. Mantiene la lógica del formato fuera del modelo y del análisis.
-Utiliza selección por tipo de Java 21, sin ejecutar FILTER, MAP ni REDUCE.
-La validación del programa sigue siendo responsabilidad del parser: se debe
-completar antes de llamar al generador.
+| Clase | Paquete | Responsabilidad |
+|---|---|---|
+| `Main` | `minilang` | Punto de entrada: muestra mensajes y define el código de salida. |
+| `MiniLangCompiler` | `minilang` | Conecta lectura, análisis y escritura; solo escribe si todo es válido. |
+| `Lexer` | `minilang.lexer` | Convierte el texto en tokens con su número de línea. |
+| `Parser` | `minilang.parser` | Analizador descendente recursivo: un método por regla de la gramática. |
+| `SemanticAnalyzer` | `minilang.semantic` | Rechaza operaciones después de REDUCE. |
+| `Instruction` y subclases | `minilang.model` | Representan el programa como objetos. |
+| `IrGenerator` | `minilang.ir` | Une las líneas que produce cada instrucción. |
 
-El contrato de salida es una instrucción por línea, con campos separados por
-`|`, números de DATA separados por comas y ningún espacio adicional:
+Jerarquía de instrucciones:
+
+```text
+Instruction (abstracta)
+├── DataInstr
+├── FilterInstr
+├── MapInstr
+├── ReduceInstr
+└── PrintInstr
+```
+
+- **Herencia:** `Instruction` guarda la línea de origen y la validación de
+  números, que todas las subclases reutilizan.
+- **Sobrescritura:** cada subclase implementa los métodos abstractos `getName()`
+  y `toIR()`. FILTER, MAP y REDUCE sobrescriben `requiresList()`, y REDUCE
+  también `producesNumber()`.
+- **Polimorfismo:** `IrGenerator` y `SemanticAnalyzer` recorren una
+  `List<Instruction>` sin preguntar el tipo concreto; Java elige en tiempo de
+  ejecución qué implementación usar. Agregar una instrucción nueva solo requiere
+  una subclase nueva.
+
+Los objetos son inmutables, los operadores son enumeraciones limitadas a la
+gramática y los números usan `BigInteger`, porque la gramática no fija un
+límite para los enteros.
+
+## Contrato `programa.ir` (Java → Python)
+
+Una instrucción por línea, campos separados por `|`, números de DATA separados
+por comas y sin espacios:
 
 ```text
 DATA|3,8,5,10,12
@@ -104,72 +173,48 @@ REDUCE|SUM
 PRINT
 ```
 
-Se usan saltos LF (`\n`), incluido uno al final. Los enteros se escriben en
-decimal sin ceros iniciales. El orden de las instrucciones se conserva.
-El generador devuelve texto en memoria; `Compilador` conecta la lectura UTF-8,
-el análisis completo y la escritura del resultado en UTF-8 sin BOM.
+| Instrucción | Formato | Valores |
+|---|---|---|
+| DATA | `DATA\|n1,n2,...` | Enteros no negativos |
+| FILTER | `FILTER\|comparador\|n` | `>` `<` `>=` `<=` `==` |
+| MAP | `MAP\|operador\|n` | `+` `-` `*` |
+| REDUCE | `REDUCE\|tipo` | `SUM` `MAX` `MIN` |
+| PRINT | `PRINT` | — |
 
-Uso desde Java:
+La etapa Java garantiza que:
 
-```java
-var instrucciones = new Parser(new Lexer(texto).tokenizar()).parsear();
-String ir = new GeneradorIR().generar(instrucciones);
-```
+- El archivo está en UTF-8 sin BOM, con saltos de línea LF, incluido uno al final.
+- La primera línea es DATA y la última es PRINT; el orden del programa se conserva.
+- Hay como máximo un REDUCE y, si existe, está justo antes de PRINT.
+- Los enteros se escriben en decimal, sin signo y sin ceros a la izquierda.
 
-## Ejecutar la etapa Java
+`.gitattributes` obliga a Git a conservar los saltos LF de `programa.ir`,
+`resultado.txt` y `firma.txt` en cualquier computadora, aunque tenga
+`core.autocrlf=true`.
 
-Desde la raíz del repositorio, con JDK 21 y PowerShell:
+## Pruebas de Java
 
-```powershell
-$fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
-javac -encoding UTF-8 -d java/build $fuentes
-java -cp java/build minilang.Main
-```
-
-La aplicación no recibe argumentos: busca `programa.mini` y escribe
-`programa.ir` en el directorio actual. Se incluye el ejemplo del contrato como
-`programa.mini`. Guárdalo en UTF-8 sin BOM. El IR generado está excluido de Git.
-
-El código de salida es 0 al completar la generación, 1 ante errores de análisis
-o de lectura/escritura, y 2 por argumentos no admitidos. Los errores se muestran
-en la salida de error; los léxicos y sintácticos incluyen la línea.
-La salida solo se abre después de validar todo el programa: si falla el análisis,
-no se crea ni se sobrescribe `programa.ir`. Si existía un IR anterior, permanece
-intacto y no representa la entrada rechazada; comprueba el código de salida
-antes de usarlo. La escritura no es atómica: un fallo de disco durante ella
-puede dejar el archivo incompleto.
-
-Esta ejecución termina en el IR; Python, MIPS y la integración final siguen
-pendientes y corresponden a la compañera.
-
-Para compilar todo Java y ejecutar las pruebas desde PowerShell con JDK 21:
+Desde la raíz del repositorio, en PowerShell:
 
 ```powershell
 $fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
-$pruebas = Get-ChildItem pruebas/java -Filter *.java | Select-Object -ExpandProperty FullName
+$pruebas = Get-ChildItem tests/java -Filter *.java | Select-Object -ExpandProperty FullName
 javac -encoding UTF-8 -Xlint:all -d java/build $fuentes $pruebas
 java -cp java/build LexerTest
 java -cp java/build ParserTest
-java -cp java/build GeneradorIRTest
-java -cp java/build EtapaJavaTest
+java -cp java/build SemanticAnalyzerTest
+java -cp java/build IrGeneratorTest
+java -cp java/build JavaStageTest
 ```
 
-Las pruebas cubren tokens y líneas, construcción del modelo, sintaxis inválida,
-formato exacto de IR y ejecución Java con archivos temporales. La prueba de la
-aplicación verifica los códigos 0, 1 y 2, mensajes de éxito en `stdout`, errores
-en `stderr` y conservación del IR anterior cuando falla el análisis o se pasan
-argumentos no admitidos. También verifica archivos ausentes y fallos de escritura.
-Este conjunto comprueba exclusivamente Java; no sustituye los casos obligatorios
-del pipeline completo que corresponden a la compañera.
+| Prueba | Qué verifica |
+|---|---|
+| `LexerTest` | Tokens, operadores, líneas (LF, CRLF y CR), números y errores léxicos. |
+| `ParserTest` | Construcción de objetos, variantes de la gramática y errores sintácticos con línea. |
+| `SemanticAnalyzerTest` | Programas válidos y rechazo de operaciones después de REDUCE. |
+| `IrGeneratorTest` | Formato exacto del IR y que no se genere IR para programas inválidos. |
+| `JavaStageTest` | Ejecuta la aplicación en carpetas temporales: códigos de salida, mensajes, BOM, UTF-16, archivo ausente y conservación del IR anterior. |
 
-## Trabajo por pasos
-
-`develop` es la base de las ramas de trabajo y contiene la etapa Java hasta la
-lectura y escritura de archivos. La revisión final de pruebas se desarrolla en
-`test/java-validation`, creada después de incorporar `feature/java-file-pipeline`
-a `develop` mediante avance directo (fast-forward).
-
-Cada tarea pequeña se desarrolla en una rama específica y se registra mediante
-un commit en inglés siguiendo Conventional Commits. No se integra en `main`
-sin autorización. Tras cada paso se revisa el resultado y se espera la
-indicación explícita `continuar` antes de avanzar.
+Cada prueba imprime `PASS: ...` si todo está bien; si algo falla, termina con
+un `AssertionError` que indica el caso. No se usa JUnit para no depender de
+librerías externas.

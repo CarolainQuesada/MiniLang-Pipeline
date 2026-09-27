@@ -2,7 +2,4 @@
 *.class
 /java/build/
 
-# Generated pipeline output
-/programa.ir
-/resultado.txt
-/firma.txt
+# programa.ir, resultado.txt and firma.txt are deliverables (item 4): they are versioned.

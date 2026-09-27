@@ -2,13 +2,13 @@ package minilang.lexer;
 
 import java.util.Objects;
 
-/** Unidad lexica y su linea de origen, numerada desde 1. */
-public record Token(TipoToken tipo, String lexema, int linea) {
+/** Lexical unit and its source line, numbered from 1. */
+public record Token(TokenType type, String lexeme, int line) {
     public Token {
-        Objects.requireNonNull(tipo, "El tipo es obligatorio");
-        Objects.requireNonNull(lexema, "El lexema es obligatorio");
-        if (linea < 1) {
-            throw new IllegalArgumentException("La linea debe ser positiva");
+        Objects.requireNonNull(type, "type is required");
+        Objects.requireNonNull(lexeme, "lexeme is required");
+        if (line < 1) {
+            throw new IllegalArgumentException("line must be positive");
         }
     }
 }

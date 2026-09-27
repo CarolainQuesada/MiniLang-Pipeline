@@ -3,130 +3,130 @@ package minilang.parser;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import minilang.lexer.TipoToken;
 import minilang.lexer.Token;
-import minilang.modelo.DataInstr;
-import minilang.modelo.FilterInstr;
-import minilang.modelo.Instruccion;
-import minilang.modelo.MapInstr;
-import minilang.modelo.PrintInstr;
-import minilang.modelo.ReduceInstr;
+import minilang.lexer.TokenType;
+import minilang.model.DataInstr;
+import minilang.model.FilterInstr;
+import minilang.model.Instruction;
+import minilang.model.MapInstr;
+import minilang.model.PrintInstr;
+import minilang.model.ReduceInstr;
 
-/** Analizador descendente: una funcion por produccion de la gramatica. */
+/** Recursive descent parser: one method per grammar rule. */
 public final class Parser {
     private final List<Token> tokens;
-    private int posicion;
+    private int position;
 
     public Parser(List<Token> tokens) {
         this.tokens = List.copyOf(tokens);
         if (this.tokens.isEmpty()
-                || this.tokens.get(this.tokens.size() - 1).tipo() != TipoToken.EOF) {
-            throw new IllegalArgumentException("La lista de tokens debe terminar en EOF");
+                || this.tokens.get(this.tokens.size() - 1).type() != TokenType.EOF) {
+            throw new IllegalArgumentException("token list must end with EOF");
         }
         for (int i = 0; i < this.tokens.size() - 1; i++) {
-            if (this.tokens.get(i).tipo() == TipoToken.EOF) {
-                throw new IllegalArgumentException("EOF solo puede aparecer al final");
+            if (this.tokens.get(i).type() == TokenType.EOF) {
+                throw new IllegalArgumentException("EOF may only appear at the end");
             }
         }
     }
 
-    public List<Instruccion> parsear() {
-        posicion = 0;
-        List<Instruccion> instrucciones = new ArrayList<>();
-        instrucciones.add(leerData());
-        instrucciones.add(leerOperacion());
-        while (esOperacion(actual().tipo())) {
-            instrucciones.add(leerOperacion());
+    public List<Instruction> parse() {
+        position = 0;
+        List<Instruction> instructions = new ArrayList<>();
+        instructions.add(parseData());
+        instructions.add(parseOperation());
+        while (isOperation(current().type())) {
+            instructions.add(parseOperation());
         }
-        Token imprimir = exigir(TipoToken.PRINT, "PRINT");
-        instrucciones.add(new PrintInstr(imprimir.linea()));
-        exigir(TipoToken.EOF, "fin del programa despues de PRINT");
-        return List.copyOf(instrucciones);
+        Token print = expect(TokenType.PRINT, "PRINT");
+        instructions.add(new PrintInstr(print.line()));
+        expect(TokenType.EOF, "fin del programa despues de PRINT");
+        return List.copyOf(instructions);
     }
 
-    private DataInstr leerData() {
-        Token inicio = exigir(TipoToken.DATA, "DATA al inicio del programa");
-        List<BigInteger> numeros = new ArrayList<>();
-        numeros.add(leerNumero());
-        while (actual().tipo() == TipoToken.NUMERO) {
-            numeros.add(leerNumero());
+    private DataInstr parseData() {
+        Token keyword = expect(TokenType.DATA, "DATA al inicio del programa");
+        List<BigInteger> numbers = new ArrayList<>();
+        numbers.add(parseNumber());
+        while (current().type() == TokenType.NUMBER) {
+            numbers.add(parseNumber());
         }
-        return new DataInstr(inicio.linea(), numeros);
+        return new DataInstr(keyword.line(), numbers);
     }
 
-    private Instruccion leerOperacion() {
-        return switch (actual().tipo()) {
-            case FILTER -> leerFilter();
-            case MAP -> leerMap();
-            case REDUCE -> leerReduce();
-            default -> throw error("una operacion FILTER, MAP o REDUCE");
+    private Instruction parseOperation() {
+        return switch (current().type()) {
+            case FILTER -> parseFilter();
+            case MAP -> parseMap();
+            case REDUCE -> parseReduce();
+            default -> throw unexpected("una operacion FILTER, MAP o REDUCE");
         };
     }
 
-    private FilterInstr leerFilter() {
-        Token inicio = exigir(TipoToken.FILTER, "FILTER");
-        FilterInstr.Comparador comparador = switch (actual().tipo()) {
-            case MAYOR -> FilterInstr.Comparador.MAYOR;
-            case MENOR -> FilterInstr.Comparador.MENOR;
-            case MAYOR_O_IGUAL -> FilterInstr.Comparador.MAYOR_O_IGUAL;
-            case MENOR_O_IGUAL -> FilterInstr.Comparador.MENOR_O_IGUAL;
-            case IGUAL -> FilterInstr.Comparador.IGUAL;
-            default -> throw error("un comparador >, <, >=, <= o ==");
+    private FilterInstr parseFilter() {
+        Token keyword = expect(TokenType.FILTER, "FILTER");
+        FilterInstr.Comparison comparison = switch (current().type()) {
+            case GREATER -> FilterInstr.Comparison.GREATER;
+            case LESS -> FilterInstr.Comparison.LESS;
+            case GREATER_EQUAL -> FilterInstr.Comparison.GREATER_OR_EQUAL;
+            case LESS_EQUAL -> FilterInstr.Comparison.LESS_OR_EQUAL;
+            case EQUAL_EQUAL -> FilterInstr.Comparison.EQUAL;
+            default -> throw unexpected("un comparador >, <, >=, <= o ==");
         };
-        posicion++;
-        return new FilterInstr(inicio.linea(), comparador, leerNumero());
+        position++;
+        return new FilterInstr(keyword.line(), comparison, parseNumber());
     }
 
-    private MapInstr leerMap() {
-        Token inicio = exigir(TipoToken.MAP, "MAP");
-        MapInstr.Operador operador = switch (actual().tipo()) {
-            case MAS -> MapInstr.Operador.SUMA;
-            case MENOS -> MapInstr.Operador.RESTA;
-            case ASTERISCO -> MapInstr.Operador.MULTIPLICACION;
-            default -> throw error("un operador +, - o *");
+    private MapInstr parseMap() {
+        Token keyword = expect(TokenType.MAP, "MAP");
+        MapInstr.Operator operator = switch (current().type()) {
+            case PLUS -> MapInstr.Operator.ADD;
+            case MINUS -> MapInstr.Operator.SUBTRACT;
+            case STAR -> MapInstr.Operator.MULTIPLY;
+            default -> throw unexpected("un operador +, - o *");
         };
-        posicion++;
-        return new MapInstr(inicio.linea(), operador, leerNumero());
+        position++;
+        return new MapInstr(keyword.line(), operator, parseNumber());
     }
 
-    private ReduceInstr leerReduce() {
-        Token inicio = exigir(TipoToken.REDUCE, "REDUCE");
-        ReduceInstr.Tipo tipo = switch (actual().tipo()) {
-            case SUM -> ReduceInstr.Tipo.SUM;
-            case MAX -> ReduceInstr.Tipo.MAX;
-            case MIN -> ReduceInstr.Tipo.MIN;
-            default -> throw error("SUM, MAX o MIN");
+    private ReduceInstr parseReduce() {
+        Token keyword = expect(TokenType.REDUCE, "REDUCE");
+        ReduceInstr.Aggregate aggregate = switch (current().type()) {
+            case SUM -> ReduceInstr.Aggregate.SUM;
+            case MAX -> ReduceInstr.Aggregate.MAX;
+            case MIN -> ReduceInstr.Aggregate.MIN;
+            default -> throw unexpected("SUM, MAX o MIN");
         };
-        posicion++;
-        return new ReduceInstr(inicio.linea(), tipo);
+        position++;
+        return new ReduceInstr(keyword.line(), aggregate);
     }
 
-    private BigInteger leerNumero() {
-        return new BigInteger(exigir(TipoToken.NUMERO, "un entero no negativo").lexema());
+    private BigInteger parseNumber() {
+        return new BigInteger(expect(TokenType.NUMBER, "un entero no negativo").lexeme());
     }
 
-    private Token exigir(TipoToken tipo, String esperado) {
-        if (actual().tipo() != tipo) {
-            throw error(esperado);
+    private Token expect(TokenType type, String expected) {
+        if (current().type() != type) {
+            throw unexpected(expected);
         }
-        Token token = actual();
-        if (tipo != TipoToken.EOF) {
-            posicion++;
+        Token token = current();
+        if (type != TokenType.EOF) {
+            position++;
         }
         return token;
     }
 
-    private Token actual() {
-        return tokens.get(posicion);
+    private Token current() {
+        return tokens.get(position);
     }
 
-    private ErrorSintactico error(String esperado) {
-        Token token = actual();
-        String encontrado = token.tipo() == TipoToken.EOF ? "fin del archivo" : "'" + token.lexema() + "'";
-        return new ErrorSintactico(token.linea(), "Se esperaba " + esperado + "; se encontro " + encontrado);
+    private SyntaxException unexpected(String expected) {
+        Token token = current();
+        String found = token.type() == TokenType.EOF ? "fin del archivo" : "'" + token.lexeme() + "'";
+        return new SyntaxException(token.line(), "Se esperaba " + expected + "; se encontro " + found);
     }
 
-    private static boolean esOperacion(TipoToken tipo) {
-        return tipo == TipoToken.FILTER || tipo == TipoToken.MAP || tipo == TipoToken.REDUCE;
+    private static boolean isOperation(TokenType type) {
+        return type == TokenType.FILTER || type == TokenType.MAP || type == TokenType.REDUCE;
     }
 }

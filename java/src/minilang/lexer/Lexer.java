@@ -5,106 +5,113 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Tokeniza texto; no valida la estructura del programa ni ejecuta instrucciones. */
+/** Splits text into tokens; does not validate program structure or execute instructions. */
 public final class Lexer {
-    private static final Map<String, TipoToken> PALABRAS = Map.of(
-        "DATA", TipoToken.DATA, "FILTER", TipoToken.FILTER,
-        "MAP", TipoToken.MAP, "REDUCE", TipoToken.REDUCE,
-        "PRINT", TipoToken.PRINT, "SUM", TipoToken.SUM,
-        "MAX", TipoToken.MAX, "MIN", TipoToken.MIN);
+    private static final Map<String, TokenType> KEYWORDS = Map.of(
+        "DATA", TokenType.DATA, "FILTER", TokenType.FILTER,
+        "MAP", TokenType.MAP, "REDUCE", TokenType.REDUCE,
+        "PRINT", TokenType.PRINT, "SUM", TokenType.SUM,
+        "MAX", TokenType.MAX, "MIN", TokenType.MIN);
 
-    private final String fuente;
-    private int posicion;
-    private int linea;
+    private final String source;
+    private int position;
+    private int line;
 
-    public Lexer(String fuente) {
-        this.fuente = Objects.requireNonNull(fuente, "La fuente es obligatoria");
+    public Lexer(String source) {
+        this.source = Objects.requireNonNull(source, "source is required");
     }
 
-    public List<Token> tokenizar() {
-        posicion = 0;
-        linea = 1;
+    public List<Token> tokenize() {
+        position = 0;
+        line = 1;
         List<Token> tokens = new ArrayList<>();
-        while (posicion < fuente.length()) {
-            char actual = fuente.charAt(posicion);
-            if (actual == ' ' || actual == '\t') {
-                posicion++;
-            } else if (actual == '\r' || actual == '\n') {
-                consumirSalto();
-            } else if (esDigito(actual)) {
-                tokens.add(leerNumero());
-            } else if (esLetra(actual)) {
-                tokens.add(leerPalabra());
+        while (position < source.length()) {
+            char current = source.charAt(position);
+            if (current == ' ' || current == '\t') {
+                position++;
+            } else if (current == '\r' || current == '\n') {
+                consumeLineBreak();
+            } else if (isDigit(current)) {
+                tokens.add(readNumber());
+            } else if (Character.isLetter(current)) {
+                tokens.add(readWord());
             } else {
-                tokens.add(leerOperador());
+                tokens.add(readOperator());
             }
         }
-        tokens.add(new Token(TipoToken.EOF, "", linea));
+        tokens.add(new Token(TokenType.EOF, "", line));
         return List.copyOf(tokens);
     }
 
-    private void consumirSalto() {
-        char salto = fuente.charAt(posicion++);
-        if (salto == '\r' && posicion < fuente.length() && fuente.charAt(posicion) == '\n') {
-            posicion++;
+    private void consumeLineBreak() {
+        char lineBreak = source.charAt(position++);
+        if (lineBreak == '\r' && position < source.length() && source.charAt(position) == '\n') {
+            position++;
         }
-        linea++;
+        line++;
     }
 
-    private Token leerNumero() {
-        int inicio = posicion;
-        while (posicion < fuente.length() && esDigito(fuente.charAt(posicion))) {
-            posicion++;
+    private Token readNumber() {
+        int start = position;
+        while (position < source.length() && isDigit(source.charAt(position))) {
+            position++;
         }
-        return new Token(TipoToken.NUMERO, fuente.substring(inicio, posicion), linea);
+        return new Token(TokenType.NUMBER, source.substring(start, position), line);
     }
 
-    private Token leerPalabra() {
-        int inicio = posicion;
-        while (posicion < fuente.length() && esLetra(fuente.charAt(posicion))) {
-            posicion++;
+    /** Reads letters of any language so the error shows the whole word; only KEYWORDS are valid. */
+    private Token readWord() {
+        int start = position;
+        while (position < source.length() && Character.isLetter(source.charAt(position))) {
+            position++;
         }
-        String palabra = fuente.substring(inicio, posicion);
-        TipoToken tipo = PALABRAS.get(palabra);
-        if (tipo == null) {
-            throw new ErrorLexico(linea, "Palabra no reconocida: " + palabra);
+        String word = source.substring(start, position);
+        TokenType type = KEYWORDS.get(word);
+        if (type == null) {
+            throw new LexicalException(line, "Palabra no reconocida: " + word);
         }
-        return new Token(tipo, palabra, linea);
+        return new Token(type, word, line);
     }
 
-    private Token leerOperador() {
-        int inicio = posicion;
-        char simbolo = fuente.charAt(posicion++);
-        TipoToken tipo = switch (simbolo) {
-            case '+' -> TipoToken.MAS;
-            case '-' -> TipoToken.MENOS;
-            case '*' -> TipoToken.ASTERISCO;
-            case '>' -> consumirIgual() ? TipoToken.MAYOR_O_IGUAL : TipoToken.MAYOR;
-            case '<' -> consumirIgual() ? TipoToken.MENOR_O_IGUAL : TipoToken.MENOR;
+    private Token readOperator() {
+        int start = position;
+        char symbol = source.charAt(position++);
+        TokenType type = switch (symbol) {
+            case '+' -> TokenType.PLUS;
+            case '-' -> TokenType.MINUS;
+            case '*' -> TokenType.STAR;
+            case '>' -> consumeEquals() ? TokenType.GREATER_EQUAL : TokenType.GREATER;
+            case '<' -> consumeEquals() ? TokenType.LESS_EQUAL : TokenType.LESS;
             case '=' -> {
-                if (!consumirIgual()) {
-                    throw new ErrorLexico(linea, "Operador '=' invalido; se esperaba '=='");
+                if (!consumeEquals()) {
+                    throw new LexicalException(line, "Operador '=' invalido; se esperaba '=='");
                 }
-                yield TipoToken.IGUAL;
+                yield TokenType.EQUAL_EQUAL;
             }
-            default -> throw new ErrorLexico(linea, "Caracter no reconocido: " + simbolo);
+            default -> throw new LexicalException(line,
+                "Caracter no reconocido: " + describe(source.codePointAt(start)));
         };
-        return new Token(tipo, fuente.substring(inicio, posicion), linea);
+        return new Token(type, source.substring(start, position), line);
     }
 
-    private boolean consumirIgual() {
-        if (posicion < fuente.length() && fuente.charAt(posicion) == '=') {
-            posicion++;
+    private boolean consumeEquals() {
+        if (position < source.length() && source.charAt(position) == '=') {
+            position++;
             return true;
         }
         return false;
     }
 
-    private static boolean esDigito(char caracter) {
-        return caracter >= '0' && caracter <= '9';
+    private static boolean isDigit(char character) {
+        return character >= '0' && character <= '9';
     }
 
-    private static boolean esLetra(char caracter) {
-        return (caracter >= 'A' && caracter <= 'Z') || (caracter >= 'a' && caracter <= 'z');
+    /** Visible ASCII is shown as is; anything else by its Unicode code, since consoles may not print it. */
+    private static String describe(int codePoint) {
+        if (codePoint > ' ' && codePoint < 127) {
+            return String.valueOf((char) codePoint);
+        }
+        return String.format(
+            "U+%04X (invisible o no ASCII; puede venir de copiar y pegar, escribalo de nuevo)", codePoint);
     }
 }

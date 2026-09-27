@@ -1,0 +1,4 @@
+# Pipeline contract files keep LF line endings on every platform.
+programa.ir   text eol=lf
+resultado.txt text eol=lf
+firma.txt     text eol=lf
