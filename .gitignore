@@ -1,0 +1,8 @@
+# Java compilation output
+*.class
+/java/build/
+
+# Generated pipeline output
+/programa.ir
+/resultado.txt
+/firma.txt
