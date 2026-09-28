@@ -24,14 +24,15 @@ programa.mini ──► Java ──► programa.ir ──► Python ──► re
 |---|---|---|---|---|
 | 1. Análisis y traducción | Java, orientado a objetos | `programa.mini` | `programa.ir` | Completa |
 | 2. Ejecución de operaciones | Python, funcional | `programa.ir` | `resultado.txt` | Completa |
-| 3. Firma de verificación | MIPS, ensamblador | `resultado.txt` | `firma.txt` | En desarrollo |
+| 3. Firma de verificación | MIPS, ensamblador | `resultado.txt` | `firma.txt` | Completa |
 
 ## Requisitos
 
 - JDK 17 o superior, con `java` y `javac` disponibles en la terminal.
 - Python 3.11 o superior, con `python` disponible en la terminal. Con una versión
   anterior, la etapa Python lo indica con un mensaje en vez de fallar.
-- Los requisitos de MIPS se agregarán al completar esa etapa.
+- Simulador MARS 4.5 (`Mars45.jar`), que se ejecuta con el mismo `java`. Los
+  comandos de este README suponen que está en la carpeta Descargas del usuario.
 
 No se usan librerías externas.
 
@@ -44,7 +45,8 @@ java/src/       Código fuente de la etapa Java.
 tests/java/     Pruebas de la etapa Java.
 python/         Código fuente de la etapa Python.
 tests/python/   Pruebas de la etapa Python.
-mips/           Etapa MIPS (en desarrollo).
+mips/           Código fuente de la etapa MIPS.
+tests/mips/     Pruebas de la etapa MIPS.
 ```
 
 ## Lenguaje MiniLang
@@ -307,3 +309,96 @@ python -m unittest discover -s tests/python -v
 | `test_executor.py` | Ejecuta la etapa en carpetas temporales: `resultado.txt` exacto, códigos de salida, errores y conservación del resultado anterior. |
 
 Se usa `unittest`, incluido en Python, para no depender de librerías externas.
+
+## Etapa 3: MIPS
+
+### Ejecución
+
+Desde la raíz del repositorio, después de ejecutar la etapa Python:
+
+```powershell
+java -jar "$env:USERPROFILE\Downloads\Mars45.jar" nc sm ae1 se1 mips/signature.asm
+```
+
+Si el archivo de MARS tiene otro nombre o está en otra carpeta (la descarga
+oficial se llama `Mars4_5.jar`), se cambia la ruta en el comando.
+
+Opciones de MARS: `nc` omite el aviso de copyright, `sm` inicia en `main`, y
+`ae1`/`se1` terminan con código 1 si hay un error de ensamblado o de ejecución.
+
+Para ver la ejecución paso a paso en la interfaz de MARS (registros y memoria),
+se abre MARS desde la carpeta del proyecto con
+`java -jar "$env:USERPROFILE\Downloads\Mars45.jar"` y luego `mips/signature.asm`.
+Si MARS se abre con doble clic, busca `resultado.txt` en la carpeta del `.jar` y
+no lo encuentra.
+El programa lee `resultado.txt` y escribe `firma.txt` en la carpeta actual.
+Termina con código 0 si generó la firma y con 1 ante cualquier error; en ese
+caso el mensaje va a la salida de error y `firma.txt` no se crea ni se modifica.
+
+### Firma de verificación
+
+La fórmula es la del enunciado, generalizada para resultados que son listas:
+
+```text
+operaciones = líneas de la traza antes de RESULT=
+acc         = 0
+acc         = acc * 31 + valor        para cada valor de RESULT=, en orden
+checksum    = acc XOR operaciones
+checksum    = checksum + 17
+```
+
+Con el ejemplo del enunciado (`RESULT=60`, 3 operaciones): `acc = 60`,
+`60 XOR 3 = 63` y `63 + 17 = 80`. Cuando el resultado es una lista, multiplicar
+por 31 antes de sumar hace que el orden importe: `[1, 2]` y `[2, 1]` tienen
+firmas distintas. Si la lista está vacía, `acc = 0`.
+
+La aritmética es de 32 bits, módulo 2³², como en los checksums habituales:
+`mul`, `addu` y `addiu` no se detienen por desbordamiento, así que un resultado
+válido nunca se rechaza por ser grande. La firma se escribe como entero sin signo.
+
+`firma.txt` (UTF-8, saltos LF):
+
+```text
+OPERATIONS=3
+CHECKSUM=80
+```
+
+### Requisitos de la sección 6
+
+| Requisito | Dónde se cumple |
+|---|---|
+| Registros | `$s0`–`$s7` guardan el estado del recorrido; `$t0`–`$t9` los valores temporales. |
+| Acceso a memoria | `resultado.txt` se carga en `text` y se recorre con `lbu`; `firma.txt` se arma con `sb`; `$ra` se guarda en la pila con `sw`/`lw`. |
+| Ciclo o recorrido | `scan_lines` recorre las líneas, `value_loop` los valores de `RESULT=` y `digit_loop` los dígitos. |
+| Operación aritmética | `mul` y `addu` en `acc * 31 + valor`, `addiu` en `+ 17`. |
+| Operación lógica | `xor` con la cantidad de operaciones; `or` al validar el signo `-`. |
+| Salto condicional | `beq`, `bne`, `beqz`, `bnez`, `bltz` y `bgeu` para clasificar caracteres y detectar errores. |
+
+MIPS procesa los datos generados por la etapa anterior: lee `resultado.txt`, no
+constantes del programa.
+
+### Errores detectados
+
+| Situación | Mensaje |
+|---|---|
+| Falta `resultado.txt` | `No se encontro resultado.txt. Ejecute primero la etapa Python...` |
+| No hay línea `RESULT=` | `resultado.txt no tiene la linea RESULT=.` |
+| Carácter inválido | `resultado.txt, linea 2: caracter invalido en RESULT=` |
+| Signo mal ubicado | `resultado.txt, linea 2: numero invalido en RESULT=` |
+| `RESULT=` vacío | `resultado.txt, linea 2: RESULT= no tiene un valor` |
+| Texto después de `RESULT=` | `resultado.txt, linea 2: RESULT= debe ser la ultima linea` |
+| Archivo de más de 64 KB | `resultado.txt es demasiado grande (maximo 65536 bytes).` |
+
+### Pruebas de MIPS
+
+Desde la raíz del repositorio, con MARS en Descargas (o en la ruta indicada por
+la variable de entorno `MARS_JAR`):
+
+```powershell
+python -m unittest discover -s tests/mips -v
+```
+
+`test_signature.py` ejecuta `signature.asm` en MARS dentro de carpetas
+temporales y compara `firma.txt` con una implementación de referencia de la
+fórmula: ejemplo del enunciado (80), números, listas, lista vacía, negativos,
+números de más de 32 bits, CRLF, errores y conservación de la firma anterior.
