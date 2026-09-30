@@ -5,7 +5,7 @@ set "REPO=%~dp0"
 set "WORKDIR=%REPO%"
 if not "%~1"=="" set "WORKDIR=%~f1"
 if not exist "%WORKDIR%\programa.mini" (
-    echo programa.mini not found in %WORKDIR%
+    echo programa.mini not found in !WORKDIR!
     exit /b 1
 )
 set "MARS_JAR=%USERPROFILE%\Downloads\Mars45.jar"
@@ -48,7 +48,7 @@ python "%REPO%python\executor.py"
 if errorlevel 1 exit /b 1
 
 if not exist "%MARS_JAR%" (
-    echo MARS jar not found at %MARS_JAR%
+    echo MARS jar not found at !MARS_JAR!
     echo Install Mars45.jar in Downloads or set MARS_JAR_OVERRIDE.
     exit /b 1
 )
