@@ -82,15 +82,66 @@ No external libraries are used.
 ## Project Structure
 
 ```text
-programa.mini   Sample program from the assignment.
-programa.ir     IR generated from programa.mini by the Java stage.
-java/src/       Java stage source code.
-tests/java/     Java stage tests.
-python/         Python stage source code.
-tests/python/   Python stage tests.
-mips/           MIPS stage source code.
-tests/mips/     MIPS stage tests.
+programa.mini     Sample program from the assignment.
+programa.ir       IR generated from programa.mini by the Java stage.
+resultado.txt     Result generated from programa.ir by the Python stage.
+firma.txt         Signature generated from resultado.txt by the MIPS stage.
+run_pipeline.bat  Builds, tests and runs the whole pipeline.
+cases/            The six mandatory test cases from section 7.
+java/src/         Java stage source code.
+java/doc/         Javadoc generated from java/src.
+tests/java/       Java stage tests.
+python/           Python stage source code.
+tests/python/     Python stage tests.
+mips/             MIPS stage source code.
+tests/mips/       MIPS stage tests.
+docs/             Pipeline diagram image.
 ```
+
+## Running the Whole Pipeline
+
+From the repository root in PowerShell:
+
+```powershell
+.\run_pipeline.bat
+```
+
+`run_pipeline.bat` compiles the Java stage, runs the Java and Python tests, runs
+the three stages in order on `programa.mini`, and finally runs the MIPS tests.
+It stops at the first step that fails and exits with code 1; when every step
+succeeds it prints `Pipeline completed successfully.` and exits with code 0.
+
+MARS is expected at `%USERPROFILE%\Downloads\Mars45.jar`. If it is somewhere
+else, set its path before running the launcher:
+
+```powershell
+$env:MARS_JAR_OVERRIDE = "C:\path\to\Mars45.jar"
+.\run_pipeline.bat
+```
+
+## Mandatory Test Cases
+
+The six mandatory cases from section 7 are in `cases/`, one folder per case,
+each with its own `programa.mini`. Their expected results are documented in
+section 3 of the brief document.
+
+| Case | Folder | Purpose (section 7) |
+|---|---|---|
+| 1 | `cases/case1_valid_program` | Valid program with FILTER, MAP, REDUCE and PRINT |
+| 2 | `cases/case2_invalid_operator` | Program with an invalid operator |
+| 3 | `cases/case3_missing_data` | Program without DATA |
+| 4 | `cases/case4_reduce_max` | Program with REDUCE MAX |
+| 5 | `cases/case5_filter_empties_list` | Program where FILTER empties the list |
+| 6 | `cases/case6_consecutive_operations` | Program with at least two consecutive MAP/FILTER operations |
+
+To run a case, pass its folder to the launcher:
+
+```powershell
+.\run_pipeline.bat cases\case2_invalid_operator
+```
+
+The three stages run inside that folder, so the files in the repository root
+are not modified. The files generated inside a case folder are ignored by Git.
 
 ## MiniLang Language
 
@@ -492,3 +543,18 @@ Expected generated artifacts:
 
 The project is ready when all three test suites pass and the pipeline generates
 all three output files without errors.
+
+## References
+
+- MARS 4.5, MIPS Assembler and Runtime Simulator, by Pete Sanderson and Ken
+  Vollmar, Missouri State University:
+  <https://computerscience.missouristate.edu/mars-mips-simulator.htm>. The file
+  and exit syscalls (13 to 17) are described in the Syscalls page of the MARS
+  built-in help.
+- Python documentation: [built-in functions `filter` and `map`](https://docs.python.org/3/library/functions.html),
+  [`functools.reduce`](https://docs.python.org/3/library/functools.html),
+  [`operator`](https://docs.python.org/3/library/operator.html),
+  [`dataclasses`](https://docs.python.org/3/library/dataclasses.html) and
+  [`unittest`](https://docs.python.org/3/library/unittest.html).
+- Java SE 17 documentation: [`java.math.BigInteger`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigInteger.html)
+  and the [`javadoc` tool](https://docs.oracle.com/en/java/javase/17/docs/specs/man/javadoc.html).
