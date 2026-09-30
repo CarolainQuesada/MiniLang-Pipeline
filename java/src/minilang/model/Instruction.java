@@ -3,10 +3,20 @@ package minilang.model;
 import java.math.BigInteger;
 import java.util.Objects;
 
-/** Program instruction with its source line. */
+/**
+ * Common root of all MiniLang instructions.
+ *
+ * <p>Each instruction keeps the source line where it was declared and exposes the
+ * operations needed to generate the IR contract and to validate the semantic flow.
+ */
 public abstract class Instruction {
     private final int line;
 
+    /**
+     * Creates a program instruction tied to a positive starting line.
+     *
+     * @param line source line number, starting from 1
+     */
     protected Instruction(int line) {
         if (line < 1) {
             throw new IllegalArgumentException("line must be positive");

@@ -3,7 +3,13 @@ package minilang.model;
 import java.math.BigInteger;
 import java.util.Objects;
 
+/**
+ * Represents a {@code FILTER} instruction, which keeps a comparison and an operand.
+ */
 public final class FilterInstr extends Instruction {
+    /**
+     * Supported comparison operators for the FILTER instruction.
+     */
     public enum Comparison {
         GREATER(">"), LESS("<"), GREATER_OR_EQUAL(">="), LESS_OR_EQUAL("<="), EQUAL("==");
 
@@ -21,6 +27,13 @@ public final class FilterInstr extends Instruction {
     private final Comparison comparison;
     private final BigInteger operand;
 
+    /**
+     * Creates a FILTER instruction.
+     *
+     * @param line source line number
+     * @param comparison comparison operator to apply
+     * @param operand numeric threshold used by the filter
+     */
     public FilterInstr(int line, Comparison comparison, BigInteger operand) {
         super(line);
         this.comparison = Objects.requireNonNull(comparison, "comparison is required");

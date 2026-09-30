@@ -5,7 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Splits text into tokens; does not validate program structure or execute instructions. */
+/**
+ * Splits the source text into the token stream used by the parser.
+ *
+ * <p>The lexer is responsible only for recognizing the primitive language elements:
+ * reserved words, numbers, operators and line breaks. It does not validate the order
+ * of the instructions or the semantics of the program.</p>
+ */
 public final class Lexer {
     private static final Map<String, TokenType> KEYWORDS = Map.of(
         "DATA", TokenType.DATA, "FILTER", TokenType.FILTER,
@@ -17,10 +23,20 @@ public final class Lexer {
     private int position;
     private int line;
 
+    /**
+     * Creates a lexer for a MiniLang source string.
+     *
+     * @param source source text to tokenize
+     */
     public Lexer(String source) {
         this.source = Objects.requireNonNull(source, "source is required");
     }
 
+    /**
+     * Converts the complete input into a sequence of tokens followed by EOF.
+     *
+     * @return immutable list of tokens ready for parsing
+     */
     public List<Token> tokenize() {
         position = 0;
         line = 1;

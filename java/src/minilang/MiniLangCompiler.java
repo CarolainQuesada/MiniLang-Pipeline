@@ -9,10 +9,28 @@ import minilang.lexer.Lexer;
 import minilang.parser.Parser;
 import minilang.semantic.SemanticAnalyzer;
 
-/** Connects reading, analysis and writing for the Java stage. */
+/**
+ * Connects the lexical analysis, syntactic validation, semantic checks and IR generation.
+ *
+ * <p>The compiler reads a source file in UTF-8, strips a BOM if present, parses the program,
+ * validates the meaning of the operations and writes the final IR text to disk.</p>
+ */
 public final class MiniLangCompiler {
     private static final String BOM = "﻿";
 
+    /**
+     * Creates the compiler used to process the source program.
+     */
+    public MiniLangCompiler() {
+    }
+
+    /**
+     * Compiles the input program into a valid IR file.
+     *
+     * @param input source file to read, usually {@code programa.mini}
+     * @param output destination file, usually {@code programa.ir}
+     * @throws IOException if the read or write operation fails
+     */
     public void compile(Path input, Path output) throws IOException {
         String source = stripBom(Files.readString(input, StandardCharsets.UTF_8));
         var instructions = new Parser(new Lexer(source).tokenize()).parse();

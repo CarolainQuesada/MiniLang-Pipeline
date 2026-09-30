@@ -12,11 +12,22 @@ import minilang.model.MapInstr;
 import minilang.model.PrintInstr;
 import minilang.model.ReduceInstr;
 
-/** Recursive descent parser: one method per grammar rule. */
+/**
+ * Parses the token stream produced by the lexer and builds the instruction model.
+ *
+ * <p>The grammar accepted by this parser is a simplified pipeline:
+ * {@code DATA ... FILTER/MAP/REDUCE ... PRINT}. If an invalid token or structure is found,
+ * it throws a syntax exception with the source line and the expected token.</p>
+ */
 public final class Parser {
     private final List<Token> tokens;
     private int position;
 
+    /**
+     * Creates a parser over a complete token stream that must finish in EOF.
+     *
+     * @param tokens list of tokens obtained from the lexer
+     */
     public Parser(List<Token> tokens) {
         this.tokens = List.copyOf(tokens);
         if (this.tokens.isEmpty()
@@ -30,6 +41,11 @@ public final class Parser {
         }
     }
 
+    /**
+     * Parses the whole program and returns the instruction model.
+     *
+     * @return immutable list of instructions ready for semantic checks and IR generation
+     */
     public List<Instruction> parse() {
         position = 0;
         List<Instruction> instructions = new ArrayList<>();

@@ -8,6 +8,13 @@ import minilang.lexer.LexicalException;
 import minilang.parser.SyntaxException;
 import minilang.semantic.SemanticException;
 
+/**
+ * Entry point of the Java stage of the MiniLang pipeline.
+ *
+ * <p>The application reads {@code programa.mini}, validates the complete source,
+ * generates the IR contract, and writes the result to {@code programa.ir}.
+ * It exits with codes 0, 1 or 2 depending on the final status of execution.</p>
+ */
 public final class Main {
     private static final Path INPUT = Path.of("programa.mini");
     private static final Path OUTPUT = Path.of("programa.ir");
@@ -15,6 +22,11 @@ public final class Main {
     private Main() {
     }
 
+    /**
+     * Runs the Java build pipeline without accepting any command-line arguments.
+     *
+     * @param args command-line parameters; the program rejects any value other than none
+     */
     public static void main(String[] args) {
         if (args.length != 0) {
             System.err.println("Uso: java -cp java/build minilang.Main (sin argumentos)");

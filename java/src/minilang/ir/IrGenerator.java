@@ -6,10 +6,18 @@ import java.util.stream.Collectors;
 import minilang.model.Instruction;
 
 /**
- * Joins the lines each instruction produces with toIR(); does not execute operations or write files.
- * It does not know the subclasses: the format of each line is resolved through polymorphism.
+ * Serializes a validated instruction list into the IR text file format.
+ *
+ * <p>This class only handles formatting. It does not execute any FILTER, MAP or REDUCE;
+ * those operations continue to be the responsibility of the Python stage.</p>
  */
 public final class IrGenerator {
+    /**
+     * Converts a list of instructions into the exact contract required by the pipeline.
+     *
+     * @param instructions validated instructions in execution order
+     * @return IR content with one instruction per line and a final newline
+     */
     public String generate(List<Instruction> instructions) {
         Objects.requireNonNull(instructions, "instructions are required");
         return instructions.stream()

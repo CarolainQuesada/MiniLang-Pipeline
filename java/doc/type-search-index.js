@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"minilang","l":"Main"},{"p":"minilang","l":"MiniLangCompiler"}];updateSearchResults();

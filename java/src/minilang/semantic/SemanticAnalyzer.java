@@ -5,11 +5,18 @@ import java.util.Objects;
 import minilang.model.Instruction;
 
 /**
- * Checks the meaning of a program the parser already accepted. The grammar allows
- * operations after REDUCE, but at that point the list is already a single number.
- * It does not check concrete types: each instruction reports what it needs and produces.
+ * Validates the semantic consistency of an already syntactically correct program.
+ *
+ * <p>The parser accepts the grammar, but a REDUCE instruction reduces the data list to a
+ * single numeric value. This analyzer ensures that no operation that still requires a list
+ * is executed afterwards.</p>
  */
 public final class SemanticAnalyzer {
+    /**
+     * Checks whether the operation sequence keeps a valid data flow.
+     *
+     * @param instructions instructions in the order they appear in the source program
+     */
     public void check(List<Instruction> instructions) {
         Objects.requireNonNull(instructions, "instructions are required");
         Instruction reduction = null;

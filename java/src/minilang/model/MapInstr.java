@@ -3,7 +3,13 @@ package minilang.model;
 import java.math.BigInteger;
 import java.util.Objects;
 
+/**
+ * Represents a {@code MAP} instruction, which transforms each element using one operator.
+ */
 public final class MapInstr extends Instruction {
+    /**
+     * Arithmetic operators supported by the MAP instruction.
+     */
     public enum Operator {
         ADD("+"), SUBTRACT("-"), MULTIPLY("*");
 
@@ -21,6 +27,13 @@ public final class MapInstr extends Instruction {
     private final Operator operator;
     private final BigInteger operand;
 
+    /**
+     * Creates a MAP instruction.
+     *
+     * @param line source line number
+     * @param operator arithmetic symbol to apply to each value
+     * @param operand numeric constant used in the operation
+     */
     public MapInstr(int line, Operator operator, BigInteger operand) {
         super(line);
         this.operator = Objects.requireNonNull(operator, "operator is required");
