@@ -1,5 +1,6 @@
 package minilang.lexer;
 
+/** Token categories recognized by the MiniLang lexer. */
 public enum TokenType {
     DATA, FILTER, MAP, REDUCE, PRINT, SUM, MAX, MIN,
     NUMBER,

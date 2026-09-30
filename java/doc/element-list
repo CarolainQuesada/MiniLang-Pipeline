@@ -1,1 +1,6 @@
 minilang
+minilang.ir
+minilang.lexer
+minilang.model
+minilang.parser
+minilang.semantic

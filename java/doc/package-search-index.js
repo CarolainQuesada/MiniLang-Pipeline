@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"minilang"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"minilang"},{"l":"minilang.ir"},{"l":"minilang.lexer"},{"l":"minilang.model"},{"l":"minilang.parser"},{"l":"minilang.semantic"}];updateSearchResults();
