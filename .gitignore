@@ -7,3 +7,8 @@ __pycache__/
 *.pyc
 
 # programa.ir, resultado.txt and firma.txt are deliverables (item 4): they are versioned.
+
+# Files generated when a mandatory case is run; only its programa.mini is versioned.
+cases/*/programa.ir
+cases/*/resultado.txt
+cases/*/firma.txt
