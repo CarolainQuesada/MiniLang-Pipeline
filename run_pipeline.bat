@@ -2,6 +2,12 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "REPO=%~dp0"
+set "WORKDIR=%REPO%"
+if not "%~1"=="" set "WORKDIR=%~f1"
+if not exist "%WORKDIR%\programa.mini" (
+    echo programa.mini not found in %WORKDIR%
+    exit /b 1
+)
 set "MARS_JAR=%USERPROFILE%\Downloads\Mars45.jar"
 if not "%MARS_JAR_OVERRIDE%"=="" set "MARS_JAR=%MARS_JAR_OVERRIDE%"
 
@@ -35,6 +41,7 @@ echo [3/3] Running Python tests and the full pipeline...
 python -m unittest discover -s "%REPO%tests\python" -v
 if errorlevel 1 exit /b 1
 
+cd /d "%WORKDIR%"
 java -cp "%REPO%java\build" minilang.Main
 if errorlevel 1 exit /b 1
 python "%REPO%python\executor.py"
@@ -49,6 +56,7 @@ if not exist "%MARS_JAR%" (
 java -jar "%MARS_JAR%" nc sm ae1 se1 "%REPO%mips\signature.asm"
 if errorlevel 1 exit /b 1
 
+cd /d "%REPO%"
 python -m unittest discover -s "%REPO%tests\mips" -v
 if errorlevel 1 exit /b 1
 
