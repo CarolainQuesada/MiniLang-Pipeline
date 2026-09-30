@@ -402,3 +402,39 @@ python -m unittest discover -s tests/mips -v
 temporales y compara `firma.txt` con una implementación de referencia de la
 fórmula: ejemplo del enunciado (80), números, listas, lista vacía, negativos,
 números de más de 32 bits, CRLF, errores y conservación de la firma anterior.
+
+## Final delivery checklist
+
+Before submitting the project, verify the following in order:
+
+```powershell
+# 1) Java stage and tests
+$fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
+$pruebas = Get-ChildItem tests/java -Filter *.java | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -Xlint:all -d java/build $fuentes $pruebas
+java -cp java/build LexerTest
+java -cp java/build ParserTest
+java -cp java/build SemanticAnalyzerTest
+java -cp java/build IrGeneratorTest
+java -cp java/build JavaStageTest
+
+# 2) Python stage and tests
+python -m unittest discover -s tests/python -v
+
+# 3) Full end-to-end pipeline
+java -cp java/build minilang.Main
+python python/executor.py
+java -jar "$env:USERPROFILE\Downloads\Mars45.jar" nc sm ae1 se1 mips/signature.asm
+
+# 4) MIPS verification tests
+python -m unittest discover -s tests/mips -v
+```
+
+Expected generated artifacts:
+
+- `programa.ir`
+- `resultado.txt`
+- `firma.txt`
+
+The project is considered ready when all three test suites pass and the pipeline
+generates all three output files without errors.
