@@ -1,15 +1,16 @@
 # MiniLang Pipeline
 
-Reto práctico de la Parte B del examen parcial de EIF400 Paradigmas de
-Programación (Universidad Nacional, Sede Regional Brunca – Campus Coto,
-II Ciclo 2026).
+Practical assignment for Part B of the EIF400 Programming Paradigms midterm
+exam (National University, Brunca Regional Campus – Coto Campus,
+Semester II, 2026).
 
-El proyecto lee un pequeño lenguaje de transformación de datos, lo valida, lo
-traduce a una representación intermedia, ejecuta las operaciones con estilo
-funcional y genera una firma de verificación. Cada etapa usa un lenguaje y un
-paradigma distinto, y se comunica con la siguiente únicamente mediante archivos.
+The project reads and validates a small data-transformation language, translates
+it into an intermediate representation, executes its operations using a
+functional style, and generates a verification signature. Each stage uses a
+different language and paradigm, and communicates with the next stage only
+through files.
 
-## Integrantes
+## Team Members
 
 - Ashly Delgado
 - Carolain Quesada
@@ -20,38 +21,38 @@ paradigma distinto, y se comunica con la siguiente únicamente mediante archivos
 programa.mini ──► Java ──► programa.ir ──► Python ──► resultado.txt ──► MIPS ──► firma.txt
 ```
 
-| Etapa | Lenguaje y paradigma | Entrada | Salida | Estado |
+| Stage | Language and paradigm | Input | Output | Status |
 |---|---|---|---|---|
-| 1. Análisis y traducción | Java, orientado a objetos | `programa.mini` | `programa.ir` | Completa |
-| 2. Ejecución de operaciones | Python, funcional | `programa.ir` | `resultado.txt` | Completa |
-| 3. Firma de verificación | MIPS, ensamblador | `resultado.txt` | `firma.txt` | Completa |
+| 1. Analysis and translation | Java, object-oriented | `programa.mini` | `programa.ir` | Complete |
+| 2. Operation execution | Python, functional | `programa.ir` | `resultado.txt` | Complete |
+| 3. Verification signature | MIPS assembly | `resultado.txt` | `firma.txt` | Complete |
 
-## Requisitos
+## Requirements
 
-- JDK 17 o superior, con `java` y `javac` disponibles en la terminal.
-- Python 3.11 o superior, con `python` disponible en la terminal. Con una versión
-  anterior, la etapa Python lo indica con un mensaje en vez de fallar.
-- Simulador MARS 4.5 (`Mars45.jar`), que se ejecuta con el mismo `java`. Los
-  comandos de este README suponen que está en la carpeta Descargas del usuario.
+- JDK 17 or later, with `java` and `javac` available in the terminal.
+- Python 3.11 or later, with `python` available in the terminal. If an older
+  version is used, the Python stage displays a message instead of failing.
+- MARS 4.5 simulator (`Mars45.jar`), run with the same `java` executable. The
+  commands in this README assume it is in the user's Downloads folder.
 
-No se usan librerías externas.
+No external libraries are used.
 
-## Estructura
+## Project Structure
 
 ```text
-programa.mini   Programa de ejemplo del enunciado.
-programa.ir     IR generado por la etapa Java a partir de programa.mini.
-java/src/       Código fuente de la etapa Java.
-tests/java/     Pruebas de la etapa Java.
-python/         Código fuente de la etapa Python.
-tests/python/   Pruebas de la etapa Python.
-mips/           Código fuente de la etapa MIPS.
-tests/mips/     Pruebas de la etapa MIPS.
+programa.mini   Sample program from the assignment.
+programa.ir     IR generated from programa.mini by the Java stage.
+java/src/       Java stage source code.
+tests/java/     Java stage tests.
+python/         Python stage source code.
+tests/python/   Python stage tests.
+mips/           MIPS stage source code.
+tests/mips/     MIPS stage tests.
 ```
 
-## Lenguaje MiniLang
+## MiniLang Language
 
-Ejemplo (`programa.mini`):
+Example (`programa.mini`):
 
 ```text
 DATA 3 8 5 10 12
@@ -61,89 +62,89 @@ REDUCE SUM
 PRINT
 ```
 
-Se usa la gramática del enunciado, sin cambios:
+The assignment's grammar is used without changes:
 
 ```text
-<programa>   ::= <data> <operacion> { <operacion> } "PRINT"
-<data>       ::= "DATA" <numero> { <numero> }
-<operacion>  ::= <filter> | <map> | <reduce>
-<filter>     ::= "FILTER" <comparador> <numero>
-<map>        ::= "MAP" <aritmetico> <numero>
+<program>    ::= <data> <operation> { <operation> } "PRINT"
+<data>       ::= "DATA" <number> { <number> }
+<operation>  ::= <filter> | <map> | <reduce>
+<filter>     ::= "FILTER" <comparator> <number>
+<map>        ::= "MAP" <arithmetic> <number>
 <reduce>     ::= "REDUCE" ("SUM" | "MAX" | "MIN")
-<comparador> ::= ">" | "<" | ">=" | "<=" | "=="
-<aritmetico> ::= "+" | "-" | "*"
-<numero>     ::= entero no negativo
+<comparator> ::= ">" | "<" | ">=" | "<=" | "=="
+<arithmetic> ::= "+" | "-" | "*"
+<number>     ::= non-negative integer
 ```
 
-- Las palabras reservadas se escriben en mayúsculas.
-- Los espacios, tabulaciones y saltos de línea separan elementos, pero no son
-  obligatorios entre un operador y un número (`MAP*2` es válido).
-- **Regla semántica:** REDUCE convierte la lista en un solo número, por lo que
-  después de REDUCE solo puede venir PRINT. REDUCE es opcional; sin él, el
-  resultado es la lista transformada.
+- Reserved words must be uppercase.
+- Spaces, tabs, and line breaks separate tokens, but are not required between an
+  operator and a number (`MAP*2` is valid).
+- **Semantic rule:** REDUCE converts the list into a single number, so only PRINT
+  may follow REDUCE. REDUCE is optional; without it, the result is the
+  transformed list.
 
-## Etapa 1: Java
+## Stage 1: Java
 
-### Ejecución
+### Running the Java Stage
 
-Desde la raíz del repositorio, en PowerShell:
+From the repository root in PowerShell:
 
 ```powershell
-$fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
-javac -encoding UTF-8 -d java/build $fuentes
+$sources = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -d java/build $sources
 java -cp java/build minilang.Main
 ```
 
-El programa no recibe argumentos: lee `programa.mini` y escribe `programa.ir`
-en la carpeta actual. `programa.mini` debe estar guardado en UTF-8 (con o sin
-BOM).
+The program takes no arguments: it reads `programa.mini` and writes
+`programa.ir` to the current directory. `programa.mini` must be encoded as
+UTF-8, with or without a BOM.
 
-| Código de salida | Significado |
+| Exit code | Meaning |
 |---|---|
-| 0 | Programa válido; se generó `programa.ir`. |
-| 1 | Error léxico, sintáctico, semántico o de lectura/escritura. |
-| 2 | Se pasaron argumentos. |
+| 0 | Program is valid; `programa.ir` was generated. |
+| 1 | Lexical, syntax, semantic, or file I/O error. |
+| 2 | Arguments were provided. |
 
-Si hay un error, el mensaje se muestra en la salida de error y `programa.ir` no
-se crea ni se modifica. Si existía uno de una ejecución anterior, queda intacto;
-por eso las etapas siguientes deben revisar el código de salida antes de usarlo.
+On error, a message is written to standard error and `programa.ir` is not created
+or modified. If a file from a previous run exists, it remains unchanged;
+therefore, later stages must check the exit code before using it.
 
-### Errores detectados
+### Detected Errors
 
-| Tipo | Entrada | Mensaje |
+| Type | Input | Message |
 |---|---|---|
-| Léxico | `FILTER ! 5` | `Linea 2: Caracter no reconocido: !` |
-| Sintáctico | `FILTER + 5` | `Linea 2: Se esperaba un comparador >, <, >=, <= o ==; se encontro '+'` |
-| Sintáctico | Programa sin DATA | `Linea 1: Se esperaba DATA al inicio del programa; se encontro 'FILTER'` |
-| Semántico | `REDUCE SUM` seguido de `MAP * 2` | `Linea 3: MAP necesita una lista, pero REDUCE de la linea 2 ya la convirtio en un solo numero; despues de REDUCE solo puede venir PRINT` |
+| Lexical | `FILTER ! 5` | `Linea 2: Caracter no reconocido: !` |
+| Syntax | `FILTER + 5` | `Linea 2: Se esperaba un comparador >, <, >=, <= o ==; se encontro '+'` |
+| Syntax | Program without DATA | `Linea 1: Se esperaba DATA al inicio del programa; se encontro 'FILTER'` |
+| Semantic | `REDUCE SUM` followed by `MAP * 2` | `Linea 3: MAP necesita una lista, pero REDUCE de la linea 2 ya la convirtio en un solo numero; despues de REDUCE solo puede venir PRINT` |
 
-También se informan con un mensaje claro la falta de `programa.mini` y un
-archivo que no está en UTF-8 (por ejemplo, UTF-16 creado con `>` en Windows
-PowerShell 5.1). Los caracteres invisibles o no ASCII, que suelen aparecer al
-copiar y pegar, se muestran con su código Unicode (por ejemplo, `U+00A0`), y las
-palabras desconocidas se muestran completas aunque tengan tildes (`FILTÉR`).
+Missing `programa.mini` files and files that are not UTF-8 (for example, UTF-16
+files created with `>` in Windows PowerShell 5.1) are also reported clearly.
+Invisible or non-ASCII characters, which can appear when copying and pasting,
+are displayed with their Unicode code point (for example, `U+00A0`). Unknown
+words are shown in full, including accented characters (`FILTÉR`).
 
-### Diseño
+### Design
 
 ```text
 MiniLangCompiler:  Lexer ──► Parser ──► SemanticAnalyzer ──► IrGenerator
-                  (tokens)  (List<Instruction>)  (reglas)    (programa.ir)
+                  (tokens)  (List<Instruction>)   (rules)       (programa.ir)
 ```
 
-| Clase | Paquete | Responsabilidad |
+| Class | Package | Responsibility |
 |---|---|---|
-| `Main` | `minilang` | Punto de entrada: muestra mensajes y define el código de salida. |
-| `MiniLangCompiler` | `minilang` | Conecta lectura, análisis y escritura; solo escribe si todo es válido. |
-| `Lexer` | `minilang.lexer` | Convierte el texto en tokens con su número de línea. |
-| `Parser` | `minilang.parser` | Analizador descendente recursivo: un método por regla de la gramática. |
-| `SemanticAnalyzer` | `minilang.semantic` | Rechaza operaciones después de REDUCE. |
-| `Instruction` y subclases | `minilang.model` | Representan el programa como objetos. |
-| `IrGenerator` | `minilang.ir` | Une las líneas que produce cada instrucción. |
+| `Main` | `minilang` | Entry point: displays messages and sets the exit code. |
+| `MiniLangCompiler` | `minilang` | Connects reading, analysis, and writing; writes output only when the program is valid. |
+| `Lexer` | `minilang.lexer` | Converts source text into tokens and tracks their line numbers. |
+| `Parser` | `minilang.parser` | Recursive-descent parser with one method per grammar rule. |
+| `SemanticAnalyzer` | `minilang.semantic` | Rejects operations after REDUCE. |
+| `Instruction` and subclasses | `minilang.model` | Represent the program as objects. |
+| `IrGenerator` | `minilang.ir` | Combines the lines produced by each instruction. |
 
-Jerarquía de instrucciones:
+Instruction hierarchy:
 
 ```text
-Instruction (abstracta)
+Instruction (abstract)
 ├── DataInstr
 ├── FilterInstr
 ├── MapInstr
@@ -151,24 +152,33 @@ Instruction (abstracta)
 └── PrintInstr
 ```
 
-- **Herencia:** `Instruction` guarda la línea de origen y la validación de
-  números, que todas las subclases reutilizan.
-- **Sobrescritura:** cada subclase implementa los métodos abstractos `getName()`
-  y `toIR()`. FILTER, MAP y REDUCE sobrescriben `requiresList()`, y REDUCE
-  también `producesNumber()`.
-- **Polimorfismo:** `IrGenerator` y `SemanticAnalyzer` recorren una
-  `List<Instruction>` sin preguntar el tipo concreto; Java elige en tiempo de
-  ejecución qué implementación usar. Agregar una instrucción nueva solo requiere
-  una subclase nueva.
+- **Inheritance:** `Instruction` stores the source line and number validation,
+  which all subclasses reuse.
+- **Overriding:** each subclass implements the abstract methods `getName()` and
+  `toIR()`. FILTER, MAP, and REDUCE override `requiresList()`, and REDUCE also
+  overrides `producesNumber()`.
+- **Polymorphism:** `IrGenerator` and `SemanticAnalyzer` iterate over a
+  `List<Instruction>` without checking concrete types; Java selects the correct
+  implementation at runtime. Adding an instruction only requires a new subclass.
 
-Los objetos son inmutables, los operadores son enumeraciones limitadas a la
-gramática y los números usan `BigInteger`, porque la gramática no fija un
-límite para los enteros.
+The objects are immutable, operators are enums restricted to the grammar, and
+numbers use `BigInteger` because the grammar does not define an integer limit.
 
-## Contrato `programa.ir` (Java → Python)
+### Generating Javadoc
 
-Una instrucción por línea, campos separados por `|`, números de DATA separados
-por comas y sin espacios:
+From the repository root, generate HTML documentation for all Java packages with:
+
+```powershell
+javadoc -encoding UTF-8 -d java/doc -sourcepath java/src minilang minilang.ir minilang.lexer minilang.model minilang.parser minilang.semantic
+```
+
+Open `java/doc/index.html` to browse the documentation. The class index includes
+all 17 top-level Java types and their three nested operator and comparison enums.
+
+## `programa.ir` Contract (Java → Python)
+
+One instruction per line, fields separated by `|`, and DATA numbers separated
+by commas with no spaces:
 
 ```text
 DATA|3,8,5,10,12
@@ -178,33 +188,33 @@ REDUCE|SUM
 PRINT
 ```
 
-| Instrucción | Formato | Valores |
+| Instruction | Format | Values |
 |---|---|---|
-| DATA | `DATA\|n1,n2,...` | Enteros no negativos |
-| FILTER | `FILTER\|comparador\|n` | `>` `<` `>=` `<=` `==` |
-| MAP | `MAP\|operador\|n` | `+` `-` `*` |
-| REDUCE | `REDUCE\|tipo` | `SUM` `MAX` `MIN` |
+| DATA | `DATA\|n1,n2,...` | Non-negative integers |
+| FILTER | `FILTER\|comparator\|n` | `>` `<` `>=` `<=` `==` |
+| MAP | `MAP\|operator\|n` | `+` `-` `*` |
+| REDUCE | `REDUCE\|type` | `SUM` `MAX` `MIN` |
 | PRINT | `PRINT` | — |
 
-La etapa Java garantiza que:
+The Java stage guarantees that:
 
-- El archivo está en UTF-8 sin BOM, con saltos de línea LF, incluido uno al final.
-- La primera línea es DATA y la última es PRINT; el orden del programa se conserva.
-- Hay como máximo un REDUCE y, si existe, está justo antes de PRINT.
-- Los enteros se escriben en decimal, sin signo y sin ceros a la izquierda.
+- The file is UTF-8 without a BOM, uses LF line endings, and ends with a newline.
+- The first line is DATA and the last is PRINT; program order is preserved.
+- There is at most one REDUCE, and if present, it is immediately before PRINT.
+- Integers are written in decimal, without a sign or leading zeroes.
 
-`.gitattributes` obliga a Git a conservar los saltos LF de `programa.ir`,
-`resultado.txt` y `firma.txt` en cualquier computadora, aunque tenga
+`.gitattributes` makes Git preserve LF line endings in `programa.ir`,
+`resultado.txt`, and `firma.txt` on every computer, even when
 `core.autocrlf=true`.
 
-## Pruebas de Java
+## Java Tests
 
-Desde la raíz del repositorio, en PowerShell:
+From the repository root in PowerShell:
 
 ```powershell
-$fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
-$pruebas = Get-ChildItem tests/java -Filter *.java | Select-Object -ExpandProperty FullName
-javac -encoding UTF-8 -Xlint:all -d java/build $fuentes $pruebas
+$sources = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
+$tests = Get-ChildItem tests/java -Filter *.java | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -Xlint:all -d java/build $sources $tests
 java -cp java/build LexerTest
 java -cp java/build ParserTest
 java -cp java/build SemanticAnalyzerTest
@@ -212,74 +222,74 @@ java -cp java/build IrGeneratorTest
 java -cp java/build JavaStageTest
 ```
 
-| Prueba | Qué verifica |
+| Test | What it verifies |
 |---|---|
-| `LexerTest` | Tokens, operadores, líneas (LF, CRLF y CR), números y errores léxicos. |
-| `ParserTest` | Construcción de objetos, variantes de la gramática y errores sintácticos con línea. |
-| `SemanticAnalyzerTest` | Programas válidos y rechazo de operaciones después de REDUCE. |
-| `IrGeneratorTest` | Formato exacto del IR y que no se genere IR para programas inválidos. |
-| `JavaStageTest` | Ejecuta la aplicación en carpetas temporales: códigos de salida, mensajes, BOM, UTF-16, archivo ausente y conservación del IR anterior. |
+| `LexerTest` | Tokens, operators, line endings (LF, CRLF, and CR), numbers, and lexical errors. |
+| `ParserTest` | Object construction, grammar variants, and syntax errors with line numbers. |
+| `SemanticAnalyzerTest` | Valid programs and rejection of operations after REDUCE. |
+| `IrGeneratorTest` | Exact IR format and prevention of IR generation for invalid programs. |
+| `JavaStageTest` | Runs the application in temporary directories: exit codes, messages, BOM, UTF-16, missing input, and preservation of previous IR. |
 
-Cada prueba imprime `PASS: ...` si todo está bien; si algo falla, termina con
-un `AssertionError` que indica el caso. No se usa JUnit para no depender de
-librerías externas.
+Each test prints `PASS: ...` when successful. If a test fails, it exits with an
+`AssertionError` that identifies the case. JUnit is not used, avoiding external
+library dependencies.
 
-## Etapa 2: Python
+## Stage 2: Python
 
-### Ejecución
+### Running the Python Stage
 
-Desde la raíz del repositorio, después de ejecutar la etapa Java:
+From the repository root, after running the Java stage:
 
 ```powershell
 python python/executor.py
 ```
 
-El programa no recibe argumentos: lee `programa.ir` y escribe `resultado.txt`
-en la carpeta actual. Usa los mismos códigos de salida que Java: 0 si se generó
-`resultado.txt`, 1 ante cualquier error y 2 si se pasan argumentos. Si hay un
-error, el mensaje se muestra en la salida de error y `resultado.txt` no se crea
-ni se modifica.
+The program takes no arguments: it reads `programa.ir` and writes
+`resultado.txt` to the current directory. It uses the same exit codes as Java:
+0 if `resultado.txt` was generated, 1 on any error, and 2 if arguments are
+provided. On error, a message is written to standard error and `resultado.txt`
+is not created or modified.
 
-### Estilo funcional
+### Functional Style
 
-| Operación | Construcción funcional |
+| Operation | Functional construct |
 |---|---|
-| FILTER | `filter()` con el comparador como función (`operator.gt`, `operator.lt`, ...) |
-| MAP | `map()` con el operador como función (`operator.add`, `operator.sub`, `operator.mul`) |
-| REDUCE | `functools.reduce()` con `operator.add`, `max` o `min` |
+| FILTER | `filter()` with the comparator as a function (`operator.gt`, `operator.lt`, ...) |
+| MAP | `map()` with the operator as a function (`operator.add`, `operator.sub`, `operator.mul`) |
+| REDUCE | `functools.reduce()` with `operator.add`, `max`, or `min` |
 
-- **Funciones como valores:** los comparadores y operadores se guardan en
-  diccionarios (`">"` → `operator.gt`), por lo que no hay cadenas de `if/elif`.
-- **Sin ciclos:** la etapa no usa `for`, `while` ni comprensiones. El programa
-  completo también se ejecuta con `reduce()`: cada operación recibe el resultado
-  de la anterior. Una prueba lo verifica analizando el código fuente.
-- **Inmutabilidad:** las listas son tuplas y los datos son `dataclass(frozen=True)`.
-- **Núcleo puro:** `operations.py` solo transforma datos; la lectura y escritura
-  de archivos están únicamente en `executor.py`.
+- **Functions as values:** comparators and operators are stored in dictionaries
+  (`">"` → `operator.gt`), avoiding chains of `if/elif` statements.
+- **No loops:** the stage uses no `for`, `while`, or comprehensions. The entire
+  program is also executed with `reduce()`, where each operation receives the
+  previous result. A test verifies this by analyzing the source code.
+- **Immutability:** lists are tuples and data objects use `dataclass(frozen=True)`.
+- **Pure core:** `operations.py` only transforms data; file I/O is confined to
+  `executor.py`.
 
-| Archivo | Responsabilidad |
+| File | Responsibility |
 |---|---|
-| `ir_parser.py` | Lee `programa.ir` y valida el contrato (formato de cada línea y orden DATA, operaciones, PRINT). |
-| `operations.py` | FILTER, MAP y REDUCE como funciones puras, y la ejecución del programa. |
-| `executor.py` | Punto de entrada: une las piezas, escribe `resultado.txt` y define el código de salida. |
+| `ir_parser.py` | Reads `programa.ir` and validates the contract (line formats and DATA, operation, PRINT order). |
+| `operations.py` | Implements FILTER, MAP, and REDUCE as pure functions and executes the program. |
+| `executor.py` | Entry point: connects the components, writes `resultado.txt`, and sets the exit code. |
 
-### Lista vacía
+### Empty Lists
 
-Si FILTER deja la lista vacía, las operaciones siguientes se aplican sobre `[]`:
+If FILTER leaves the list empty, subsequent operations are applied to `[]`:
 
-- `REDUCE SUM` da `0`, porque 0 es el elemento neutro de la suma.
-- `REDUCE MAX` y `REDUCE MIN` no tienen resultado: el máximo o el mínimo de una
-  lista vacía no existe. La etapa se detiene con un error y el pipeline no
-  continúa:
+- `REDUCE SUM` returns `0`, because 0 is the identity element for addition.
+- `REDUCE MAX` and `REDUCE MIN` have no result because an empty list has no
+  maximum or minimum. The stage stops with an error, and the pipeline does not
+  continue:
 
 ```text
 programa.ir, linea 3: REDUCE MAX no se puede aplicar a una lista vacia; FILTER no dejo ningun elemento
 ```
 
-### Contrato `resultado.txt` (Python → MIPS)
+### `resultado.txt` Contract (Python → MIPS)
 
-Una línea de traza por operación, con la forma `OPERACION => valor`, y al final
-la línea `RESULT=`, igual que el ejemplo del enunciado:
+One trace line per operation in the form `OPERATION => value`, followed by the
+`RESULT=` line, as in the assignment example:
 
 ```text
 FILTER > 5 => [8, 10, 12]
@@ -288,120 +298,122 @@ REDUCE SUM => 60
 RESULT=60
 ```
 
-- La cantidad de operaciones ejecutadas es la cantidad de líneas antes de `RESULT=`.
-- Sin REDUCE, el resultado es la lista: `RESULT=[16, 20, 24]`. Si FILTER la
-  vacía, `RESULT=[]`.
-- Los valores pueden ser negativos por `MAP -` (por ejemplo, `[-7, -2]`).
-- El archivo está en UTF-8 sin BOM, con saltos de línea LF, incluido uno al final.
+- The number of executed operations is the number of lines before `RESULT=`.
+- Without REDUCE, the result is a list: `RESULT=[16, 20, 24]`. If FILTER empties
+  it, the result is `RESULT=[]`.
+- Values can be negative after `MAP -` (for example, `[-7, -2]`).
+- The file is UTF-8 without a BOM, uses LF line endings, and ends with a newline.
 
-### Pruebas de Python
+### Python Tests
 
-Desde la raíz del repositorio:
+From the repository root:
 
 ```powershell
 python -m unittest discover -s tests/python -v
 ```
 
-| Prueba | Qué verifica |
+| Test | What it verifies |
 |---|---|
-| `test_ir_parser.py` | Contrato de `programa.ir`: formatos válidos, CRLF, números grandes, líneas inválidas y orden incorrecto. |
-| `test_operations.py` | Cada comparador, operador y agregación; lista vacía; traza del ejemplo; ausencia de ciclos. |
-| `test_executor.py` | Ejecuta la etapa en carpetas temporales: `resultado.txt` exacto, códigos de salida, errores y conservación del resultado anterior. |
+| `test_ir_parser.py` | `programa.ir` contract: valid formats, CRLF, large numbers, invalid lines, and incorrect ordering. |
+| `test_operations.py` | Every comparator, operator, and aggregate; empty lists; sample trace; and absence of loops. |
+| `test_executor.py` | Runs the stage in temporary directories: exact `resultado.txt`, exit codes, errors, and preservation of previous results. |
 
-Se usa `unittest`, incluido en Python, para no depender de librerías externas.
+The tests use Python's built-in `unittest` module to avoid external dependencies.
 
-## Etapa 3: MIPS
+## Stage 3: MIPS
 
-### Ejecución
+### Running the MIPS Stage
 
-Desde la raíz del repositorio, después de ejecutar la etapa Python:
+From the repository root, after running the Python stage:
 
 ```powershell
 java -jar "$env:USERPROFILE\Downloads\Mars45.jar" nc sm ae1 se1 mips/signature.asm
 ```
 
-Si el archivo de MARS tiene otro nombre o está en otra carpeta (la descarga
-oficial se llama `Mars4_5.jar`), se cambia la ruta en el comando.
+If the MARS file has a different name or is in another folder (the official
+download is named `Mars4_5.jar`), update the path in the command.
 
-Opciones de MARS: `nc` omite el aviso de copyright, `sm` inicia en `main`, y
-`ae1`/`se1` terminan con código 1 si hay un error de ensamblado o de ejecución.
+MARS options: `nc` suppresses the copyright notice, `sm` starts at `main`, and
+`ae1`/`se1` exit with code 1 if an assembly or runtime error occurs.
 
-Para ver la ejecución paso a paso en la interfaz de MARS (registros y memoria),
-se abre MARS desde la carpeta del proyecto con
-`java -jar "$env:USERPROFILE\Downloads\Mars45.jar"` y luego `mips/signature.asm`.
-Si MARS se abre con doble clic, busca `resultado.txt` en la carpeta del `.jar` y
-no lo encuentra.
-El programa lee `resultado.txt` y escribe `firma.txt` en la carpeta actual.
-Termina con código 0 si generó la firma y con 1 ante cualquier error; en ese
-caso el mensaje va a la salida de error y `firma.txt` no se crea ni se modifica.
+To step through execution in the MARS interface (registers and memory), launch
+MARS from the project directory with
+`java -jar "$env:USERPROFILE\Downloads\Mars45.jar"`, then open
+`mips/signature.asm`. If MARS is opened by double-clicking the JAR, it looks for
+`resultado.txt` in the JAR's directory and will not find it.
+The program reads `resultado.txt` and writes `firma.txt` to the current
+directory. It exits with code 0 when the signature is generated and code 1 on
+any error. In that case, the message is written to standard error and
+`firma.txt` is not created or modified.
 
-### Firma de verificación
+### Verification Signature
 
-La fórmula es la del enunciado, generalizada para resultados que son listas:
+The formula from the assignment is generalized to support list results:
 
 ```text
-operaciones = líneas de la traza antes de RESULT=
+operations = trace lines before RESULT=
 acc         = 0
-acc         = acc * 31 + valor        para cada valor de RESULT=, en orden
-checksum    = acc XOR operaciones
+acc         = acc * 31 + value        for each RESULT= value, in order
+checksum    = acc XOR operations
 checksum    = checksum + 17
 ```
 
-Con el ejemplo del enunciado (`RESULT=60`, 3 operaciones): `acc = 60`,
-`60 XOR 3 = 63` y `63 + 17 = 80`. Cuando el resultado es una lista, multiplicar
-por 31 antes de sumar hace que el orden importe: `[1, 2]` y `[2, 1]` tienen
-firmas distintas. Si la lista está vacía, `acc = 0`.
+For the assignment example (`RESULT=60`, 3 operations), `acc = 60`,
+`60 XOR 3 = 63`, and `63 + 17 = 80`. For a list result, multiplying by 31
+before adding makes the order significant: `[1, 2]` and `[2, 1]` have different
+signatures. For an empty list, `acc = 0`.
 
-La aritmética es de 32 bits, módulo 2³², como en los checksums habituales:
-`mul`, `addu` y `addiu` no se detienen por desbordamiento, así que un resultado
-válido nunca se rechaza por ser grande. La firma se escribe como entero sin signo.
+Arithmetic is 32-bit, modulo 2³², as in common checksums. `mul`, `addu`, and
+`addiu` do not stop on overflow, so a valid result is never rejected for being
+large. The signature is written as an unsigned integer.
 
-`firma.txt` (UTF-8, saltos LF):
+`firma.txt` (UTF-8, LF line endings):
 
 ```text
 OPERATIONS=3
 CHECKSUM=80
 ```
 
-### Requisitos de la sección 6
+### Section 6 Requirements
 
-| Requisito | Dónde se cumple |
+| Requirement | Where it is met |
 |---|---|
-| Registros | `$s0`–`$s7` guardan el estado del recorrido; `$t0`–`$t9` los valores temporales. |
-| Acceso a memoria | `resultado.txt` se carga en `text` y se recorre con `lbu`; `firma.txt` se arma con `sb`; `$ra` se guarda en la pila con `sw`/`lw`. |
-| Ciclo o recorrido | `scan_lines` recorre las líneas, `value_loop` los valores de `RESULT=` y `digit_loop` los dígitos. |
-| Operación aritmética | `mul` y `addu` en `acc * 31 + valor`, `addiu` en `+ 17`. |
-| Operación lógica | `xor` con la cantidad de operaciones; `or` al validar el signo `-`. |
-| Salto condicional | `beq`, `bne`, `beqz`, `bnez`, `bltz` y `bgeu` para clasificar caracteres y detectar errores. |
+| Registers | `$s0`–`$s7` store traversal state; `$t0`–`$t9` store temporary values. |
+| Memory access | `resultado.txt` is loaded into `text` and traversed with `lbu`; `firma.txt` is built with `sb`; `$ra` is saved on the stack with `sw`/`lw`. |
+| Loop or traversal | `scan_lines` traverses lines, `value_loop` traverses `RESULT=` values, and `digit_loop` traverses digits. |
+| Arithmetic operation | `mul` and `addu` calculate `acc * 31 + value`; `addiu` adds 17. |
+| Logical operation | `xor` combines the operation count; `or` validates the `-` sign. |
+| Conditional branch | `beq`, `bne`, `beqz`, `bnez`, `bltz`, and `bgeu` classify characters and detect errors. |
 
-MIPS procesa los datos generados por la etapa anterior: lee `resultado.txt`, no
-constantes del programa.
+MIPS processes data generated by the previous stage: it reads `resultado.txt`,
+not hard-coded program constants.
 
-### Errores detectados
+### Detected Errors
 
-| Situación | Mensaje |
+| Condition | Message |
 |---|---|
-| Falta `resultado.txt` | `No se encontro resultado.txt. Ejecute primero la etapa Python...` |
-| No hay línea `RESULT=` | `resultado.txt no tiene la linea RESULT=.` |
-| Carácter inválido | `resultado.txt, linea 2: caracter invalido en RESULT=` |
-| Signo mal ubicado | `resultado.txt, linea 2: numero invalido en RESULT=` |
-| `RESULT=` vacío | `resultado.txt, linea 2: RESULT= no tiene un valor` |
-| Texto después de `RESULT=` | `resultado.txt, linea 2: RESULT= debe ser la ultima linea` |
-| Archivo de más de 64 KB | `resultado.txt es demasiado grande (maximo 65536 bytes).` |
+| Missing `resultado.txt` | `No se encontro resultado.txt. Ejecute primero la etapa Python...` |
+| No `RESULT=` line | `resultado.txt no tiene la linea RESULT=.` |
+| Invalid character | `resultado.txt, linea 2: caracter invalido en RESULT=` |
+| Misplaced sign | `resultado.txt, linea 2: numero invalido en RESULT=` |
+| Empty `RESULT=` | `resultado.txt, linea 2: RESULT= no tiene un valor` |
+| Text after `RESULT=` | `resultado.txt, linea 2: RESULT= debe ser la ultima linea` |
+| File larger than 64 KB | `resultado.txt es demasiado grande (maximo 65536 bytes).` |
 
-### Pruebas de MIPS
+### MIPS Tests
 
-Desde la raíz del repositorio, con MARS en Descargas (o en la ruta indicada por
-la variable de entorno `MARS_JAR`):
+From the repository root, with MARS in Downloads (or at the path specified by
+the `MARS_JAR` environment variable):
 
 ```powershell
 python -m unittest discover -s tests/mips -v
 ```
 
-`test_signature.py` ejecuta `signature.asm` en MARS dentro de carpetas
-temporales y compara `firma.txt` con una implementación de referencia de la
-fórmula: ejemplo del enunciado (80), números, listas, lista vacía, negativos,
-números de más de 32 bits, CRLF, errores y conservación de la firma anterior.
+`test_signature.py` runs `signature.asm` in MARS using temporary directories
+and compares `firma.txt` with a reference implementation of the formula. It
+covers the assignment example (80), numbers, lists, empty lists, negative
+values, numbers larger than 32 bits, CRLF, errors, and preservation of the
+previous signature.
 
 ## Final delivery checklist
 
@@ -409,9 +421,9 @@ Before submitting the project, verify the following in order:
 
 ```powershell
 # 1) Java stage and tests
-$fuentes = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
-$pruebas = Get-ChildItem tests/java -Filter *.java | Select-Object -ExpandProperty FullName
-javac -encoding UTF-8 -Xlint:all -d java/build $fuentes $pruebas
+$sources = Get-ChildItem java/src -Recurse -Filter *.java | Select-Object -ExpandProperty FullName
+$tests = Get-ChildItem tests/java -Filter *.java | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -Xlint:all -d java/build $sources $tests
 java -cp java/build LexerTest
 java -cp java/build ParserTest
 java -cp java/build SemanticAnalyzerTest
@@ -436,5 +448,5 @@ Expected generated artifacts:
 - `resultado.txt`
 - `firma.txt`
 
-The project is considered ready when all three test suites pass and the pipeline
-generates all three output files without errors.
+The project is ready when all three test suites pass and the pipeline generates
+all three output files without errors.
