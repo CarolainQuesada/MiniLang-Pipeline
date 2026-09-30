@@ -27,6 +27,48 @@ programa.mini ──► Java ──► programa.ir ──► Python ──► re
 | 2. Operation execution | Python, functional | `programa.ir` | `resultado.txt` | Complete |
 | 3. Verification signature | MIPS assembly | `resultado.txt` | `firma.txt` | Complete |
 
+## Pipeline Diagram and File Contracts
+
+```text
+             │ programa.mini   MiniLang program
+             │                   DATA 3 8 5 10 12
+             │                   FILTER > 5
+             │                   MAP * 2
+             │                   REDUCE SUM
+             ▼                   PRINT
+┌─────────────────────────┐
+│ 1. JAVA                 │
+│ Lexer + parser + OOP    │
+└────────────┬────────────┘
+             │ programa.ir     One instruction per line, fields separated by |
+             │                   DATA|3,8,5,10,12
+             │                   FILTER|>|5
+             │                   MAP|*|2
+             │                   REDUCE|SUM
+             ▼                   PRINT
+┌─────────────────────────┐
+│ 2. PYTHON               │
+│ Functional style        │
+│ FILTER / MAP / REDUCE   │
+└────────────┬────────────┘
+             │ resultado.txt   One trace line per operation, then RESULT=
+             │                   FILTER > 5 => [8, 10, 12]
+             │                   MAP * 2 => [16, 20, 24]
+             │                   REDUCE SUM => 60
+             ▼                   RESULT=60
+┌─────────────────────────┐
+│ 3. MIPS                 │
+│ Checksum / verification │
+└────────────┬────────────┘
+             │ firma.txt       Number of operations and checksum
+             ▼                   OPERATIONS=3
+                                 CHECKSUM=80
+```
+
+Each contract is described in detail in the section of its stage below.
+
+The same diagram as an image: [`docs/pipeline-diagram.png`](docs/pipeline-diagram.png).
+
 ## Requirements
 
 - JDK 17 or later, with `java` and `javac` available in the terminal.
